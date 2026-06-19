@@ -1,0 +1,473 @@
+/* eslint-disable no-console */
+import { PrismaClient } from "@prisma/client";
+import bcrypt from "bcryptjs";
+import { randomUUID } from "crypto";
+import { addDays, startOfDay, isSameDay, subDays, subHours } from "date-fns";
+import { ATHLETES, WEEKS } from "./scad-data";
+
+const prisma = new PrismaClient();
+const DEMO_PASSWORD = "password123";
+
+// ---------- deterministic helpers ----------
+function hash(str: string): number {
+  let h = 2166136261;
+  for (let i = 0; i < str.length; i++) {
+    h ^= str.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return Math.abs(h);
+}
+const pick = <T>(arr: T[], seed: number): T => arr[seed % arr.length];
+
+// ---------- workout classification ----------
+const RACES = new Set([
+  "CONVERSE KICK-OFF",
+  "FOOTHILLS INV",
+  "NAIA BLAZING TIGER",
+  "ROYALS XC CHALLENGE",
+  "SUN CONF. CHAMP.",
+  "NAIA NATIONAL CHAMP.",
+]);
+
+function durationLabel(text: string): string | null {
+  const m = text.match(/^(\d+)-(\d+)'/);
+  return m ? `${m[1]}–${m[2]} min` : null;
+}
+
+function raceTitle(t: string): string {
+  let s = t
+    .toLowerCase()
+    .replace(/\binv\b\.?/g, "invitational")
+    .replace(/\bconf\.?\b/g, "conference")
+    .replace(/\bchamp\.?\b/g, "championship");
+  s = s
+    .split(/\s+/)
+    .map((w) => (w ? w[0].toUpperCase() + w.slice(1) : w))
+    .join(" ");
+  return s
+    .replace(/\bNaia\b/g, "NAIA")
+    .replace(/\bXc\b/g, "XC")
+    .replace(/Kick-off/i, "Kick-Off");
+}
+
+function woTitle(raw: string): string {
+  return raw
+    .replace(/\bWO\b/gi, "Workout")
+    .split(/\s+/)
+    .map((w) => (/[0-9#/"']/.test(w) ? w : w[0].toUpperCase() + w.slice(1).toLowerCase()))
+    .join(" ");
+}
+
+type Classified = {
+  type: string;
+  title: string;
+  mainSet: string | null;
+  distance: string | null;
+  pace: string | null;
+};
+
+function classify(text: string, lrTarget: string): Classified | null {
+  if (!text) return null;
+  const t = text.toUpperCase();
+  const dist = durationLabel(text);
+
+  if (t === "OFF") return { type: "REST", title: "Rest Day", mainSet: null, distance: null, pace: null };
+
+  if (RACES.has(t))
+    return {
+      type: "RACE",
+      title: raceTitle(text),
+      mainSet: "Race day — warm up early, pin numbers, line up ready to compete.",
+      distance: null,
+      pace: "Race effort",
+    };
+
+  if (t.startsWith("PRE-MEET"))
+    return { type: "WORKOUT", title: "Pre-Meet Primer", mainSet: text, distance: null, pace: "Light + strides" };
+
+  if (t.includes("TEMPO")) {
+    let title = "Tempo Workout";
+    if (t.includes("TURNOVER")) title = "Tempo + Turnover";
+    else if (t.includes("@ TEMPO")) title = "Tempo Surges";
+    else {
+      const n = t.match(/#(\d+)/);
+      title = "Tempo Workout" + (n ? ` #${n[1]}` : "");
+    }
+    const plus = text.indexOf("+");
+    const main = dist && plus > 0 ? text.slice(plus + 1).trim() : text;
+    return { type: "WORKOUT", title, mainSet: main, distance: dist, pace: "Tempo effort" };
+  }
+
+  if (/\bWO\b/.test(t) || t.includes("WO #"))
+    return { type: "WORKOUT", title: woTitle(text), mainSet: text, distance: null, pace: "See your race paces" };
+
+  if (/\bEI\b/.test(t))
+    return { type: "WORKOUT", title: "Interval Workout", mainSet: text, distance: null, pace: "3K–5K effort on reps" };
+
+  if (t.includes("STRIDES")) {
+    const plus = text.indexOf("+");
+    const main = plus > 0 ? text.slice(plus + 1).trim() : text;
+    return { type: "EASY", title: "Easy Run + Strides", mainSet: main, distance: dist, pace: "Easy" };
+  }
+
+  if (/^\d+-\d+'\s*EZ$/.test(t)) {
+    const isLong = text.startsWith(lrTarget + "'");
+    return isLong
+      ? { type: "LONG_RUN", title: "Long Run", mainSet: null, distance: dist, pace: "Easy–moderate" }
+      : { type: "EASY", title: "Easy Run", mainSet: null, distance: dist, pace: "Easy" };
+  }
+
+  return { type: "EASY", title: "Easy Run", mainSet: text, distance: dist, pace: "Easy" };
+}
+
+const FEELINGS = [
+  "Felt smooth and controlled the whole way.",
+  "Legs were heavy early but came around.",
+  "Solid session, hit the prescribed effort.",
+  "Easy and relaxed — good aerobic day.",
+  "Felt strong, could've done more.",
+  "A grind in the humidity, but got it done.",
+  "Dead legs from yesterday, kept it honest.",
+  "Best I've felt in a couple weeks.",
+];
+const SORENESS = [
+  "None to report.",
+  "Slight calf tightness, nothing concerning.",
+  "Left achilles a little sore.",
+  "General soreness, all normal.",
+  "Right hip flexor a bit tight.",
+  "Feet sore after the workout.",
+  "None.",
+  "Quads sore from the long run.",
+];
+const NOTES = [
+  "",
+  "",
+  "Shoes getting close to 400 miles.",
+  "Can we talk goal paces this week?",
+  "Heat really got to me — hydrating more.",
+  "All good, coach!",
+  "Small shin twinge, keeping an eye on it.",
+  "",
+];
+
+async function main() {
+  console.log("Resetting database...");
+  await prisma.feedback.deleteMany();
+  await prisma.assignment.deleteMany();
+  await prisma.message.deleteMany();
+  await prisma.workout.deleteMany();
+  await prisma.team.updateMany({ data: { coachId: null } });
+  await prisma.user.updateMany({ data: { teamId: null } });
+  await prisma.team.deleteMany();
+  await prisma.user.deleteMany();
+
+  const passwordHash = await bcrypt.hash(DEMO_PASSWORD, 10);
+
+  console.log("Creating coach + team...");
+  const coach = await prisma.user.create({
+    data: {
+      name: "Coach",
+      email: "coach@scadxc.com",
+      passwordHash,
+      role: "COACH",
+      bio: "Head distance coach, SCAD Atlanta Cross Country.",
+    },
+  });
+  const team = await prisma.team.create({
+    data: { name: "SCAD Atlanta Cross Country", season: "XC 2026", coachId: coach.id },
+  });
+  await prisma.user.update({
+    where: { id: coach.id },
+    data: { teamId: team.id, lastReadAnnouncementsAt: new Date() },
+  });
+
+  console.log(`Creating ${ATHLETES.length} athletes...`);
+  const athletes: { id: string; name: string; email: string; group: string }[] = [];
+  for (const a of ATHLETES) {
+    const seed = hash(a.email);
+    const athlete = await prisma.user.create({
+      data: {
+        name: a.name,
+        email: a.email,
+        passwordHash,
+        role: "ATHLETE",
+        teamId: team.id,
+        mileageGroup: a.group,
+        lrTarget: a.lrTarget,
+        ezTarget: a.ezTarget,
+        paces: JSON.stringify({ ...a.paces, doubleFreq: a.doubleFreq, xtFreq: a.xtFreq }),
+        phone: `(404) 555-0${100 + (seed % 900)}`,
+        lastReadAnnouncementsAt: subDays(new Date(), 2),
+      },
+    });
+    athletes.push({ ...athlete, group: a.group });
+  }
+
+  // long-run target per group (uniform within a group on the chart)
+  const GROUP_LR: Record<string, string> = {};
+  for (const a of ATHLETES) GROUP_LR[a.group] = a.lrTarget;
+
+  const today = startOfDay(new Date());
+
+  console.log("Building the full 4-phase plan...");
+  type WRow = {
+    id: string;
+    title: string;
+    date: Date;
+    type: string;
+    scope: string;
+    distance: string | null;
+    mainSet: string | null;
+    pace: string | null;
+    notes: string | null;
+    teamId: string;
+    createdById: string;
+  };
+  type ARow = {
+    id: string;
+    workoutId: string;
+    athleteId: string;
+    status: string;
+    viewedAt: Date | null;
+    respondedAt: Date | null;
+    date: Date;
+    type: string;
+  };
+  const workoutRows: WRow[] = [];
+  const assignmentRows: ARow[] = [];
+
+  for (const wk of WEEKS) {
+    const monday = new Date(`${wk.start}T00:00:00`);
+    for (let d = 0; d < 7; d++) {
+      const day = wk.days[d];
+      if (!day) continue;
+      const date = addDays(monday, d);
+      date.setHours(6, 30, 0, 0);
+
+      // PR (prehab/recovery/fuel) note for the day
+      const prBits: string[] = [];
+      if (day.PR && day.PR !== "NONE" && day.PR !== "TRAINING RECAP") prBits.push(day.PR);
+      if (day.PR && day.PR.includes("RECAP")) prBits.push("Submit your weekly training recap.");
+      const prNote = prBits.length ? prBits.join(" · ") : null;
+
+      // group the three cells by identical text
+      const cells: Record<string, string> = { A: day.A, B: day.B, C: day.C };
+      const byText = new Map<string, string[]>();
+      for (const g of ["A", "B", "C"]) {
+        const txt = cells[g];
+        if (!txt) continue;
+        if (!byText.has(txt)) byText.set(txt, []);
+        byText.get(txt)!.push(g);
+      }
+
+      for (const [txt, groups] of byText) {
+        const c = classify(txt, GROUP_LR[groups[0]] ?? "90-100");
+        if (!c) continue;
+        const wid = randomUUID();
+        const notes = prNote;
+        workoutRows.push({
+          id: wid,
+          title: c.title,
+          date,
+          type: c.type,
+          scope: groups.length === 3 ? "TEAM" : "INDIVIDUAL",
+          distance: c.distance,
+          mainSet: c.mainSet,
+          pace: c.pace,
+          notes,
+          teamId: team.id,
+          createdById: coach.id,
+        });
+
+        const groupAthletes = athletes.filter((a) => groups.includes(a.group));
+        for (const a of groupAthletes) {
+          const seed = hash(a.id + wid);
+          const isPast = date < today;
+          const isToday = isSameDay(date, today);
+          let status = "ASSIGNED";
+          let viewedAt: Date | null = null;
+          let respondedAt: Date | null = null;
+
+          if (c.type === "REST") {
+            status = isPast || isToday ? "VIEWED" : "ASSIGNED";
+            viewedAt = isPast || isToday ? subHours(date, -10) : null;
+          } else if (isPast) {
+            const roll = seed % 100;
+            if (roll < 80) status = "COMPLETED";
+            else if (roll < 89) status = "SKIPPED";
+            else if (roll < 95) status = "NEEDS_DISCUSSION";
+            else status = "VIEWED";
+            viewedAt = subHours(date, -9);
+            if (status !== "VIEWED") respondedAt = subHours(date, -11);
+          } else if (isToday) {
+            status = seed % 3 === 0 ? "VIEWED" : "ASSIGNED";
+            viewedAt = status === "VIEWED" ? subHours(new Date(), 2) : null;
+          }
+
+          assignmentRows.push({
+            id: randomUUID(),
+            workoutId: wid,
+            athleteId: a.id,
+            status,
+            viewedAt,
+            respondedAt,
+            date,
+            type: c.type,
+          });
+        }
+      }
+    }
+  }
+
+  console.log(`Inserting ${workoutRows.length} workouts, ${assignmentRows.length} assignments...`);
+  await prisma.workout.createMany({
+    data: workoutRows.map(({ id, title, date, type, scope, distance, mainSet, pace, notes, teamId, createdById }) => ({
+      id,
+      title,
+      date,
+      type,
+      scope,
+      distance,
+      mainSet,
+      pace,
+      notes,
+      teamId,
+      createdById,
+    })),
+  });
+  await prisma.assignment.createMany({
+    data: assignmentRows.map(({ id, workoutId, athleteId, status, viewedAt, respondedAt }) => ({
+      id,
+      workoutId,
+      athleteId,
+      status,
+      viewedAt,
+      respondedAt,
+    })),
+  });
+
+  // feedback for completed/skipped/needs-discussion in the past
+  const feedbackRows = assignmentRows
+    .filter((a) => ["COMPLETED", "SKIPPED", "NEEDS_DISCUSSION"].includes(a.status))
+    .map((a) => {
+      const seed = hash(a.id);
+      const completed = a.status !== "SKIPPED";
+      let effort: number | null = null;
+      if (completed) {
+        if (a.type === "WORKOUT") effort = 7 + (seed % 3);
+        else if (a.type === "LONG_RUN") effort = 6 + (seed % 3);
+        else if (a.type === "RACE") effort = 9 + (seed % 2);
+        else effort = 3 + (seed % 3);
+      }
+      return {
+        workoutId: a.workoutId,
+        athleteId: a.athleteId,
+        assignmentId: a.id,
+        completed,
+        effort,
+        feeling: completed ? pick(FEELINGS, seed) : "Skipped — fatigue / time. Will adjust.",
+        soreness: pick(SORENESS, seed >> 2),
+        notes:
+          a.status === "NEEDS_DISCUSSION"
+            ? "Want to talk this one through, coach."
+            : pick(NOTES, seed >> 3) || null,
+      };
+    });
+  console.log(`Inserting ${feedbackRows.length} feedback entries...`);
+  if (feedbackRows.length) await prisma.feedback.createMany({ data: feedbackRows });
+
+  // ---------- messages ----------
+  console.log("Creating messages...");
+  const byEmail = (e: string) => athletes.find((a) => a.email === e)!;
+  await prisma.message.createMany({
+    data: [
+      {
+        type: "ANNOUNCEMENT",
+        body: "Welcome to Phase 1 — base, no doubles. The goal is consistent, healthy aerobic mileage. Run your easy days truly easy and trust the build. Big season ahead.",
+        teamId: team.id,
+        senderId: coach.id,
+        createdAt: subDays(new Date(), 9),
+      },
+      {
+        type: "ANNOUNCEMENT",
+        body: "Atlanta heat is here. Move easy runs to early AM, carry fluids on anything over 40 minutes, and get your electrolytes in. Listen to your body in the humidity.",
+        teamId: team.id,
+        senderId: coach.id,
+        createdAt: subDays(new Date(), 6),
+      },
+      {
+        type: "ANNOUNCEMENT",
+        body: "Reminder: strides Tuesday/Saturday are smooth and fast, not sprints. Hit your lifts (Day 1 Wed, Day 2 Fri) and core & hip work — that's what keeps you healthy.",
+        teamId: team.id,
+        senderId: coach.id,
+        createdAt: subDays(new Date(), 3),
+      },
+      {
+        type: "ANNOUNCEMENT",
+        body: "Log your feedback after every session — effort, how you felt, any soreness. That's how I fine-tune your group and your paces. Training recap due Sunday.",
+        teamId: team.id,
+        senderId: coach.id,
+        createdAt: subDays(new Date(), 1),
+      },
+    ],
+  });
+
+  async function dm(fromCoach: boolean, athleteId: string, body: string, when: Date, read: boolean) {
+    await prisma.message.create({
+      data: {
+        type: "DIRECT",
+        body,
+        senderId: fromCoach ? coach.id : athleteId,
+        recipientId: fromCoach ? athleteId : coach.id,
+        createdAt: when,
+        readAt: read ? when : null,
+      },
+    });
+  }
+
+  const viren = byEmail("viren@scadxc.com");
+  const ryan = byEmail("ryan@scadxc.com");
+  const corinne = byEmail("corinne@scadxc.com");
+  const gray = byEmail("gray@scadxc.com");
+  const paige = byEmail("paige@scadxc.com");
+
+  // Viren (the demo athlete) — last coach message unread
+  await dm(true, viren.id, "Viren, your easy paces looked controlled this week — exactly what I want in Group B. How are the legs feeling?", subDays(new Date(), 4), true);
+  await dm(false, viren.id, "Thanks coach! Feeling good, the 40-50 min runs are settling in.", subHours(subDays(new Date(), 4), -1), true);
+  await dm(true, viren.id, "Good. Keep the easy days easy and we'll sharpen later. Nice work logging your feedback.", subHours(new Date(), 3), false);
+
+  // Ryan (Group A) — unread coach message
+  await dm(true, ryan.id, "Ryan, you're in Group A this block — 90-100 long run, 50-60 easy. Build gradually, no hero days early.", subDays(new Date(), 2), false);
+
+  // Corinne reaching out — unread for the coach
+  await dm(false, corinne.id, "Coach, I felt a twinge in my left shin on today's run. Should I cross-train tomorrow?", subHours(new Date(), 5), false);
+
+  // Gray — read exchange about XT
+  await dm(true, gray.id, "Gray, let's add 1-2 cross-training sessions a week to manage load. I'll note it on your plan.", subDays(new Date(), 3), true);
+  await dm(false, gray.id, "Sounds good, will do. Thanks coach.", subHours(subDays(new Date(), 3), -2), true);
+
+  // Paige — unread for coach
+  await dm(false, paige.id, "Coach, can we go over my 5K goal pace before the first meet?", subHours(new Date(), 8), false);
+
+  const counts = {
+    users: await prisma.user.count(),
+    workouts: await prisma.workout.count(),
+    assignments: await prisma.assignment.count(),
+    feedback: await prisma.feedback.count(),
+    messages: await prisma.message.count(),
+  };
+  console.log("Seed complete:", counts);
+  console.log(`\nDemo logins (password for all: ${DEMO_PASSWORD})`);
+  console.log("  Coach:   coach@scadxc.com");
+  console.log("  Athlete: viren@scadxc.com");
+}
+
+main()
+  .catch((e) => {
+    console.error(e);
+    process.exit(1);
+  })
+  .finally(async () => {
+    await prisma.$disconnect();
+  });

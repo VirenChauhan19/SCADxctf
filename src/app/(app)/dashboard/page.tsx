@@ -1,0 +1,263 @@
+import { redirect } from "next/navigation";
+import { startOfDay, endOfDay } from "date-fns";
+import { getCurrentUser } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+import { weekStart, weekEnd, addDays, dayKey, isSameDay } from "@/lib/date";
+import { toAssignmentDTO, type AssignmentDTO } from "@/lib/dto";
+import { parsePaces } from "@/lib/utils";
+import { AthleteDashboard, type DayCell } from "@/components/athlete-dashboard";
+import { CoachDashboard } from "@/components/coach-dashboard";
+
+export const dynamic = "force-dynamic";
+
+export default async function DashboardPage() {
+  const user = await getCurrentUser();
+  if (!user) redirect("/login");
+
+  const now = new Date();
+  const todayStart = startOfDay(now);
+  const todayEnd = endOfDay(now);
+  const ws = weekStart(now);
+  const we = weekEnd(now);
+
+  const team = user.teamId
+    ? await prisma.team.findUnique({
+        where: { id: user.teamId },
+        include: { coach: { select: { name: true } } },
+      })
+    : null;
+  const coachName = team?.coach?.name ?? "your coach";
+
+  // ---------------- ATHLETE ----------------
+  if (user.role !== "COACH") {
+    const profile = await prisma.user.findUnique({
+      where: { id: user.id },
+      select: { mileageGroup: true, lrTarget: true, ezTarget: true, paces: true },
+    });
+
+    const weekAssignments = await prisma.assignment.findMany({
+      where: {
+        athleteId: user.id,
+        workout: { date: { gte: ws, lte: we } },
+      },
+      include: { workout: true, feedback: true },
+    });
+
+    const todayAssignments = await prisma.assignment.findMany({
+      where: {
+        athleteId: user.id,
+        workout: { date: { gte: todayStart, lte: todayEnd } },
+      },
+      include: { workout: true, feedback: true },
+    });
+
+    const teamFirst = (a: { workout: { scope: string; date: Date } }, b: { workout: { scope: string; date: Date } }) =>
+      a.workout.scope === b.workout.scope
+        ? a.workout.date.getTime() - b.workout.date.getTime()
+        : a.workout.scope === "TEAM"
+          ? -1
+          : 1;
+
+    const today = todayAssignments.sort(teamFirst).map(toAssignmentDTO);
+
+    const week: DayCell[] = [];
+    for (let i = 0; i < 7; i++) {
+      const d = addDays(ws, i);
+      const key = dayKey(d);
+      const dayAssignments = weekAssignments
+        .filter((a) => dayKey(a.workout.date) === key)
+        .sort(teamFirst)
+        .map(toAssignmentDTO);
+      week.push({
+        dateISO: d.toISOString(),
+        isToday: isSameDay(d, now),
+        assignments: dayAssignments,
+      });
+    }
+
+    const viewIds = [...weekAssignments, ...todayAssignments]
+      .filter((a) => a.status === "ASSIGNED" && a.workout.date <= todayEnd)
+      .map((a) => a.id);
+
+    const nonRest = weekAssignments.filter((a) => a.workout.type !== "REST");
+    const weekStats = {
+      completed: nonRest.filter((a) => a.status === "COMPLETED").length,
+      total: nonRest.length,
+    };
+
+    const latestAnnouncementRow = user.teamId
+      ? await prisma.message.findFirst({
+          where: { type: "ANNOUNCEMENT", teamId: user.teamId },
+          orderBy: { createdAt: "desc" },
+        })
+      : null;
+
+    const unreadCount = await prisma.message.count({
+      where: { type: "DIRECT", recipientId: user.id, readAt: null },
+    });
+
+    const latestDm = await prisma.message.findFirst({
+      where: {
+        type: "DIRECT",
+        OR: [{ senderId: user.id }, { recipientId: user.id }],
+      },
+      orderBy: { createdAt: "desc" },
+    });
+
+    return (
+      <AthleteDashboard
+        firstName={user.name.split(" ")[0]}
+        coachName={coachName}
+        nowISO={now.toISOString()}
+        today={today}
+        week={week}
+        viewIds={viewIds}
+        latestAnnouncement={
+          latestAnnouncementRow
+            ? {
+                body: latestAnnouncementRow.body,
+                createdISO: latestAnnouncementRow.createdAt.toISOString(),
+              }
+            : null
+        }
+        unreadCount={unreadCount}
+        latestMessage={
+          latestDm
+            ? {
+                body: latestDm.body,
+                createdISO: latestDm.createdAt.toISOString(),
+                fromCoach: latestDm.senderId !== user.id,
+              }
+            : null
+        }
+        weekStats={weekStats}
+        group={profile?.mileageGroup ?? null}
+        lrTarget={profile?.lrTarget ?? null}
+        ezTarget={profile?.ezTarget ?? null}
+        paces={parsePaces(profile?.paces)}
+      />
+    );
+  }
+
+  // ---------------- COACH ----------------
+  const teamId = user.teamId!;
+
+  const athleteRows = await prisma.user.findMany({
+    where: { teamId, role: "ATHLETE", active: true },
+    select: { id: true, name: true },
+    orderBy: { name: "asc" },
+  });
+
+  // Week completion (non-rest team assignments)
+  const weekAssignments = await prisma.assignment.findMany({
+    where: { workout: { teamId, date: { gte: ws, lte: we }, type: { not: "REST" } } },
+    select: { status: true },
+  });
+  const weekCompleted = weekAssignments.filter((a) => a.status === "COMPLETED").length;
+  const weekCompletionPct = weekAssignments.length
+    ? Math.round((weekCompleted / weekAssignments.length) * 100)
+    : 0;
+
+  const needsDiscussion = await prisma.assignment.count({
+    where: {
+      status: "NEEDS_DISCUSSION",
+      workout: { teamId, date: { gte: addDays(todayStart, -10) } },
+    },
+  });
+
+  const unreadMessages = await prisma.message.count({
+    where: { type: "DIRECT", recipientId: user.id, readAt: null },
+  });
+
+  // Today's workouts with completion counts
+  const todayWorkouts = await prisma.workout.findMany({
+    where: { teamId, date: { gte: todayStart, lte: todayEnd } },
+    include: { assignments: { select: { status: true, athleteId: true } } },
+    orderBy: [{ scope: "asc" }, { date: "asc" }],
+  });
+
+  const today = todayWorkouts.map((w) => {
+    const total = w.assignments.length;
+    const completed = w.assignments.filter((a) => a.status === "COMPLETED").length;
+    const viewed = w.assignments.filter(
+      (a) => a.status === "VIEWED" || a.status === "SKIPPED" || a.status === "NEEDS_DISCUSSION"
+    ).length;
+    return {
+      id: w.id,
+      title: w.title,
+      type: w.type,
+      scope: w.scope,
+      total,
+      completed,
+      viewed,
+    };
+  });
+
+  // Roster status on the primary team workout today
+  const primaryToday = todayWorkouts.find((w) => w.scope === "TEAM") ?? todayWorkouts[0];
+  const statusByAthlete = new Map<string, string>();
+  if (primaryToday) {
+    for (const a of primaryToday.assignments) statusByAthlete.set(a.athleteId, a.status);
+  }
+  const roster = athleteRows.map((a) => ({
+    id: a.id,
+    name: a.name,
+    status: statusByAthlete.get(a.id) ?? "ASSIGNED",
+  }));
+
+  const feedbackRows = await prisma.feedback.findMany({
+    where: { workout: { teamId } },
+    orderBy: { updatedAt: "desc" },
+    take: 6,
+    include: {
+      athlete: { select: { id: true, name: true } },
+      workout: { select: { title: true, type: true } },
+    },
+  });
+  const recentFeedback = feedbackRows.map((f) => ({
+    athleteId: f.athlete.id,
+    athleteName: f.athlete.name,
+    workoutTitle: f.workout.title,
+    type: f.workout.type,
+    effort: f.effort,
+    feeling: f.feeling,
+    soreness: f.soreness,
+    completed: f.completed,
+    whenISO: f.updatedAt.toISOString(),
+  }));
+
+  const upcomingRows = await prisma.workout.findMany({
+    where: { teamId, date: { gte: todayStart } },
+    orderBy: { date: "asc" },
+    take: 6,
+    include: { _count: { select: { assignments: true } } },
+  });
+  const upcoming = upcomingRows.map((w) => ({
+    id: w.id,
+    title: w.title,
+    type: w.type,
+    dateISO: w.date.toISOString(),
+    scope: w.scope,
+    assignedCount: w._count.assignments,
+  }));
+
+  return (
+    <CoachDashboard
+      coachFirstName={user.name.split(" ")[0]}
+      nowISO={now.toISOString()}
+      teamName={team?.name ?? "Team Dashboard"}
+      season={team?.season ?? null}
+      athletes={athleteRows}
+      stats={{
+        athleteCount: athleteRows.length,
+        weekCompletionPct,
+        needsDiscussion,
+        unreadMessages,
+      }}
+      today={today}
+      roster={roster}
+      recentFeedback={recentFeedback}
+      upcoming={upcoming}
+    />
+  );
+}

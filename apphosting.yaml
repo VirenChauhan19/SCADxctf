@@ -1,0 +1,34 @@
+# Firebase App Hosting — build & runtime config for this Next.js app.
+# Docs: https://firebase.google.com/docs/app-hosting/configure
+#
+# App Hosting runs the full Next.js server (SSR, API routes, middleware) on
+# Cloud Run, so login / database / the nonce-CSP middleware all work.
+
+runConfig:
+  minInstances: 0
+  maxInstances: 2
+  concurrency: 80
+  cpu: 1
+  memoryMiB: 512
+
+env:
+  # Postgres connection string (use your provider's POOLED string).
+  # Create the secret with:  firebase apphosting:secrets:set DATABASE_URL
+  - variable: DATABASE_URL
+    secret: DATABASE_URL
+    availability:
+      - BUILD
+      - RUNTIME
+
+  # Session-signing secret — must be long + random (prod refuses weak secrets).
+  # Create with:  firebase apphosting:secrets:set JWT_SECRET
+  - variable: JWT_SECRET
+    secret: JWT_SECRET
+    availability:
+      - RUNTIME
+
+  # Optional: gate self-signup to your team. Uncomment, then create the secret.
+  # - variable: TEAM_INVITE_CODE
+  #   secret: TEAM_INVITE_CODE
+  #   availability:
+  #     - RUNTIME

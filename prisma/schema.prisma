@@ -1,0 +1,146 @@
+// SCAD Running Coach — data model
+// NOTE: SQLite does not support native enums, so role / type / status fields
+// are stored as strings and validated in the application layer (see src/lib/constants.ts).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Team {
+  id        String   @id @default(cuid())
+  name      String
+  season    String?
+  coachId   String?  @unique
+  coach     User?    @relation("TeamCoach", fields: [coachId], references: [id])
+  members   User[]   @relation("TeamMembers")
+  workouts  Workout[]
+  messages  Message[]
+  createdAt DateTime @default(now())
+}
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  role         String   @default("ATHLETE") // COACH | ATHLETE
+  active       Boolean  @default(true)
+  sessionVersion Int    @default(0) // bump to revoke all of a user's existing sessions
+
+  // Athlete profile details
+  gradYear       Int?
+  events         String? // e.g. "1500m, 5000m"
+  phone          String?
+  hometown       String?
+  emergencyName  String?
+  emergencyPhone String?
+  personalBests  String? // JSON string: [{ "event": "5000m", "time": "15:42" }]
+  bio            String?
+  avatarColor    String? // tailwind-ish hex for the initials avatar
+
+  // Training group + pace targets (from the team's mileage & pace chart)
+  mileageGroup String? // A | B | C
+  lrTarget     String? // long-run target, e.g. "90-100"
+  ezTarget     String? // easy-run target, e.g. "50-60"
+  paces        String? // JSON: { ez, tempo, k10, k8, k6, k5, k3, mile, doubleFreq, xtFreq }
+
+  lastReadAnnouncementsAt DateTime?
+  createdAt               DateTime  @default(now())
+
+  teamId String?
+  team   Team?   @relation("TeamMembers", fields: [teamId], references: [id])
+
+  coachOfTeam Team? @relation("TeamCoach")
+
+  createdWorkouts  Workout[]    @relation("WorkoutCreator")
+  assignments      Assignment[]
+  feedback         Feedback[]
+  sentMessages     Message[]    @relation("MessageSender")
+  receivedMessages Message[]    @relation("MessageRecipient")
+}
+
+model Workout {
+  id        String   @id @default(cuid())
+  title     String
+  date      DateTime
+  type      String   @default("EASY") // EASY | WORKOUT | LONG_RUN | RACE | REST | RECOVERY
+  scope     String   @default("TEAM") // TEAM | INDIVIDUAL
+  distance  String?
+  pace      String?
+  warmup    String?
+  mainSet   String?
+  cooldown  String?
+  notes     String?
+  location  String?
+  link      String?
+  createdAt DateTime @default(now())
+
+  teamId      String
+  team        Team   @relation(fields: [teamId], references: [id])
+  createdById String
+  createdBy   User   @relation("WorkoutCreator", fields: [createdById], references: [id])
+
+  assignments Assignment[]
+  feedback    Feedback[]
+}
+
+model Assignment {
+  id          String    @id @default(cuid())
+  status      String    @default("ASSIGNED") // ASSIGNED | VIEWED | COMPLETED | SKIPPED | NEEDS_DISCUSSION
+  customNote  String? // coach override note for this specific athlete
+  viewedAt    DateTime?
+  respondedAt DateTime?
+  createdAt   DateTime  @default(now())
+
+  workoutId String
+  workout   Workout @relation(fields: [workoutId], references: [id], onDelete: Cascade)
+  athleteId String
+  athlete   User    @relation(fields: [athleteId], references: [id], onDelete: Cascade)
+
+  feedback Feedback?
+
+  @@unique([workoutId, athleteId])
+}
+
+model Feedback {
+  id        String   @id @default(cuid())
+  completed Boolean  @default(true)
+  effort    Int? // 1-10 RPE
+  feeling   String? // how they felt
+  soreness  String? // any pain / soreness
+  notes     String? // private notes for the coach
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  workoutId String
+  workout   Workout @relation(fields: [workoutId], references: [id], onDelete: Cascade)
+  athleteId String
+  athlete   User    @relation(fields: [athleteId], references: [id], onDelete: Cascade)
+
+  assignmentId String?     @unique
+  assignment   Assignment? @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+
+  @@unique([workoutId, athleteId])
+}
+
+model Message {
+  id        String    @id @default(cuid())
+  type      String    @default("DIRECT") // DIRECT | ANNOUNCEMENT
+  body      String
+  createdAt DateTime  @default(now())
+  readAt    DateTime? // used by DIRECT messages
+
+  senderId String
+  sender   User   @relation("MessageSender", fields: [senderId], references: [id])
+
+  recipientId String?
+  recipient   User?   @relation("MessageRecipient", fields: [recipientId], references: [id])
+
+  teamId String?
+  team   Team?   @relation(fields: [teamId], references: [id])
+}
