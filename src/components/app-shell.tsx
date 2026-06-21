@@ -167,7 +167,7 @@ export function AppShell({
   return (
     <div className="min-h-screen lg:flex">
       {/* Desktop sidebar */}
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col bg-ink lg:flex">
+      <aside className="fixed inset-y-0 left-0 z-30 hidden w-72 flex-col bg-ink lg:flex">
         <div className="flex h-20 items-center gap-3 border-b border-white/10 px-5">
           <LogoMark size={34} className="rounded-md" />
           <div className="leading-none">
@@ -323,10 +323,10 @@ export function AppShell({
       </div>
 
       {/* Main content */}
-      <main className="lg:ml-64">
+      <main className="lg:ml-72">
         <div
           key={pathname}
-          className="mx-auto w-full max-w-6xl animate-fade-in px-4 pt-6 pb-[calc(6rem+env(safe-area-inset-bottom))] sm:px-6 lg:px-8 lg:py-8"
+          className="mx-auto w-full max-w-[1600px] animate-page-enter px-4 pt-6 pb-[calc(6rem+env(safe-area-inset-bottom))] sm:px-6 lg:px-10 lg:py-10 2xl:px-12"
         >
           {children}
         </div>

@@ -139,7 +139,7 @@ export function CoachDashboard({
       <div className="mb-6 flex flex-col gap-3 border-b border-paper-200 pb-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="eyebrow">{coachFirstName ? `Coach ${coachFirstName}` : "Coach"}</p>
-          <h1 className="mt-1 font-display text-3xl font-bold uppercase leading-none tracking-tight text-ink sm:text-[2.5rem]">
+          <h1 className="mt-1 font-display text-3xl font-bold uppercase leading-none tracking-tight text-ink sm:text-[2.5rem] xl:text-5xl">
             {teamName}
           </h1>
           <p className="mt-1.5 text-sm text-slate-500">
@@ -158,7 +158,7 @@ export function CoachDashboard({
       </div>
 
       {/* scoreboard */}
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 stagger">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 xl:gap-4 stagger">
         <Stat
           index="01"
           label="Active athletes"
@@ -182,7 +182,7 @@ export function CoachDashboard({
         />
       </div>
 
-      <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
+      <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-3 xl:gap-8">
         {/* main */}
         <div className="space-y-6 lg:col-span-2 stagger">
           {/* Today */}

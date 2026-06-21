@@ -148,9 +148,13 @@ export default async function DashboardPage() {
     orderBy: { name: "asc" },
   });
 
-  // Week completion (non-rest team assignments)
+  // Week completion (non-rest team assignments) — only count athletes still on
+  // the active roster so removed athletes don't drag the numbers.
   const weekAssignments = await prisma.assignment.findMany({
-    where: { workout: { teamId, date: { gte: ws, lte: we }, type: { not: "REST" } } },
+    where: {
+      athlete: { active: true },
+      workout: { teamId, date: { gte: ws, lte: we }, type: { not: "REST" } },
+    },
     select: { status: true },
   });
   const weekCompleted = weekAssignments.filter((a) => a.status === "COMPLETED").length;
@@ -161,6 +165,7 @@ export default async function DashboardPage() {
   const needsDiscussion = await prisma.assignment.count({
     where: {
       status: "NEEDS_DISCUSSION",
+      athlete: { active: true },
       workout: { teamId, date: { gte: addDays(todayStart, -10) } },
     },
   });
@@ -172,7 +177,12 @@ export default async function DashboardPage() {
   // Today's workouts with completion counts
   const todayWorkouts = await prisma.workout.findMany({
     where: { teamId, date: { gte: todayStart, lte: todayEnd } },
-    include: { assignments: { select: { status: true, athleteId: true } } },
+    include: {
+      assignments: {
+        where: { athlete: { active: true } },
+        select: { status: true, athleteId: true },
+      },
+    },
     orderBy: [{ scope: "asc" }, { date: "asc" }],
   });
 
@@ -206,7 +216,7 @@ export default async function DashboardPage() {
   }));
 
   const feedbackRows = await prisma.feedback.findMany({
-    where: { workout: { teamId } },
+    where: { athlete: { active: true }, workout: { teamId } },
     orderBy: { updatedAt: "desc" },
     take: 6,
     include: {
@@ -230,7 +240,12 @@ export default async function DashboardPage() {
     where: { teamId, date: { gte: todayStart } },
     orderBy: { date: "asc" },
     take: 6,
-    include: { _count: { select: { assignments: true } } },
+    include: {
+      assignments: {
+        where: { athlete: { active: true } },
+        select: { id: true },
+      },
+    },
   });
   const upcoming = upcomingRows.map((w) => ({
     id: w.id,
@@ -238,7 +253,7 @@ export default async function DashboardPage() {
     type: w.type,
     dateISO: w.date.toISOString(),
     scope: w.scope,
-    assignedCount: w._count.assignments,
+    assignedCount: w.assignments.length,
   }));
 
   return (
