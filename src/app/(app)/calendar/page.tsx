@@ -17,7 +17,10 @@ export default async function CalendarPage() {
   if (isCoach && user.teamId) {
     const workouts = await prisma.workout.findMany({
       where: { teamId: user.teamId },
-      include: { _count: { select: { assignments: true } } },
+      include: {
+        _count: { select: { assignments: true } },
+        assignments: { select: { athleteId: true } },
+      },
       orderBy: { date: "asc" },
     });
     events = workouts.map((w) => ({
@@ -27,12 +30,13 @@ export default async function CalendarPage() {
       dateISO: w.date.toISOString(),
       scope: w.scope,
       assignedCount: w._count.assignments,
+      assigneeIds: w.assignments.map((a) => a.athleteId),
       distance: w.distance,
       location: w.location,
     }));
     athletes = await prisma.user.findMany({
       where: { teamId: user.teamId, role: "ATHLETE", active: true },
-      select: { id: true, name: true },
+      select: { id: true, name: true, mileageGroup: true },
       orderBy: { name: "asc" },
     });
   } else {

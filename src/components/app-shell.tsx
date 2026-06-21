@@ -4,15 +4,14 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
+  LogOut,
+  Menu,
   LayoutDashboard,
   CalendarDays,
   ListChecks,
   MessageSquare,
   Users,
   Settings,
-  LogOut,
-  Menu,
-  X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Avatar } from "./ui/avatar";
@@ -25,6 +24,7 @@ type NavUser = {
   role: string;
 };
 
+// Icons are used only by the mobile bottom tab bar (the desktop sidebar is numbered).
 const ICONS = {
   dashboard: LayoutDashboard,
   calendar: CalendarDays,
@@ -32,13 +32,13 @@ const ICONS = {
   messages: MessageSquare,
   athletes: Users,
   settings: Settings,
-};
+} as const;
 
 type NavItem = {
   href: string;
   label: string;
-  icon: keyof typeof ICONS;
   badge?: number;
+  icon?: keyof typeof ICONS;
 };
 
 export function AppShell({
@@ -53,6 +53,20 @@ export function AppShell({
   const pathname = usePathname();
   const router = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [sheetClosing, setSheetClosing] = useState(false);
+
+  function openSheet() {
+    setSheetClosing(false);
+    setMobileOpen(true);
+  }
+  // Play the slide-down animation, then unmount.
+  function closeSheet() {
+    setSheetClosing(true);
+    window.setTimeout(() => {
+      setMobileOpen(false);
+      setSheetClosing(false);
+    }, 230);
+  }
 
   const isCoach = user.role === "COACH";
 
@@ -85,9 +99,8 @@ export function AppShell({
   }
 
   const NavLinks = ({ onNavigate }: { onNavigate?: () => void }) => (
-    <nav className="flex-1 space-y-1 px-3">
-      {nav.map((item) => {
-        const Icon = ICONS[item.icon];
+    <nav className="flex-1 px-3">
+      {nav.map((item, index) => {
         const active = isActive(item.href);
         return (
           <Link
@@ -95,22 +108,29 @@ export function AppShell({
             href={item.href}
             onClick={onNavigate}
             className={cn(
-              "group relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition",
+              "group relative flex items-center gap-3 border-b border-white/10 px-3 py-3 text-sm font-medium transition-colors",
               active
-                ? "bg-white/10 text-white"
-                : "text-slate-300 hover:bg-white/5 hover:text-white"
+                ? "text-white"
+                : "text-slate-400 hover:text-white"
             )}
           >
-            {active && (
-              <span className="absolute left-0 top-1/2 h-5 w-1 -translate-y-1/2 rounded-r-full bg-brand-400" />
-            )}
-            <Icon
-              size={18}
-              className={cn(active ? "text-brand-400" : "text-slate-400 group-hover:text-slate-200")}
+            <span
+              className={cn(
+                "absolute inset-y-2 left-0 w-0.5 transition-colors",
+                active ? "bg-brand-400" : "bg-transparent group-hover:bg-brand-400/40"
+              )}
             />
-            <span className="flex-1">{item.label}</span>
+            <span
+              className={cn(
+                "w-6 shrink-0 font-mono text-[11px] transition-colors",
+                active ? "text-brand-400" : "text-slate-600 group-hover:text-brand-400"
+              )}
+            >
+              {String(index + 1).padStart(2, "0")}
+            </span>
+            <span className="flex-1 tracking-tight">{item.label}</span>
             {item.badge ? (
-              <span className="inline-flex min-w-[20px] items-center justify-center rounded-full bg-brand-500 px-1.5 py-0.5 text-[11px] font-semibold text-white">
+              <span className="inline-flex min-w-[20px] items-center justify-center rounded bg-brand-500 px-1.5 py-0.5 text-[11px] font-semibold text-white">
                 {item.badge > 99 ? "99+" : item.badge}
               </span>
             ) : null}
@@ -122,7 +142,7 @@ export function AppShell({
 
   const UserCard = () => (
     <div className="border-t border-white/10 p-3">
-      <div className="flex items-center gap-3 rounded-lg px-2 py-2">
+      <div className="flex items-center gap-3 px-2 py-2">
         <Avatar name={user.name} seed={user.id} size={36} />
         <div className="min-w-0 flex-1">
           <div className="truncate text-sm font-semibold text-white">
@@ -134,7 +154,7 @@ export function AppShell({
         </div>
         <button
           onClick={logout}
-          className="rounded-lg p-2 text-slate-400 transition hover:bg-white/5 hover:text-white"
+          className="rounded-md p-2 text-slate-400 transition-colors hover:bg-white/5 hover:text-white"
           title="Sign out"
           aria-label="Sign out"
         >
@@ -148,20 +168,20 @@ export function AppShell({
     <div className="min-h-screen lg:flex">
       {/* Desktop sidebar */}
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col bg-ink lg:flex">
-        <div className="flex h-16 items-center gap-2.5 border-b border-white/5 px-5">
-          <LogoMark size={38} />
+        <div className="flex h-20 items-center gap-3 border-b border-white/10 px-5">
+          <LogoMark size={34} className="rounded-md" />
           <div className="leading-none">
-            <div className="font-display text-lg font-bold uppercase tracking-wide text-white">
+            <div className="font-display text-base font-bold uppercase tracking-[0.08em] text-white">
               SCAD Atlanta
             </div>
-            <div className="mt-0.5 text-[10px] font-semibold uppercase tracking-[0.22em] text-brand-400">
+            <div className="mt-1 text-[10px] font-semibold uppercase tracking-[0.24em] text-brand-400">
               Distance
             </div>
           </div>
         </div>
-        <div className="mt-4 flex-1">
-          <p className="mb-2 px-6 text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500">
-            Menu
+        <div className="mt-5 flex-1">
+          <p className="mb-2 px-6 font-mono text-[10px] uppercase tracking-[0.18em] text-slate-600">
+            Team Ops
           </p>
           <NavLinks />
         </div>
@@ -170,17 +190,17 @@ export function AppShell({
 
       {/* Mobile top bar (safe-area aware) */}
       <header
-        className="sticky top-0 z-30 flex items-center justify-between border-b border-slate-200 bg-white/95 px-4 backdrop-blur lg:hidden"
+        className="sticky top-0 z-30 flex items-center justify-between border-b border-paper-200 bg-white/95 px-4 backdrop-blur lg:hidden"
         style={{ paddingTop: "env(safe-area-inset-top)" }}
       >
         <Link href="/dashboard" className="flex h-14 items-center gap-2.5">
-          <LogoMark size={30} />
-          <span className="font-display text-base font-bold uppercase tracking-wide text-ink">
+          <LogoMark size={28} className="rounded-md" />
+          <span className="font-display text-base font-bold uppercase tracking-[0.08em] text-ink">
             SCAD Distance
           </span>
         </Link>
         <button
-          onClick={() => setMobileOpen(true)}
+          onClick={openSheet}
           className="flex h-14 items-center"
           aria-label="Open menu"
         >
@@ -188,72 +208,126 @@ export function AppShell({
         </button>
       </header>
 
-      {/* Mobile drawer (full menu) */}
+      {/* Mobile "More" sheet: slides up from the bottom, slides down to close */}
       {mobileOpen && (
         <div className="fixed inset-0 z-50 lg:hidden">
           <div
-            className="absolute inset-0 bg-ink/50 backdrop-blur-[2px]"
-            onClick={() => setMobileOpen(false)}
+            className={cn(
+              "absolute inset-0 bg-ink/50 backdrop-blur-[2px]",
+              sheetClosing ? "animate-fade-out" : "animate-fade-in"
+            )}
+            onClick={closeSheet}
           />
-          <div className="absolute inset-y-0 left-0 flex w-64 flex-col bg-ink animate-fade-in">
-            <div className="flex h-14 items-center justify-between px-4">
-              <LogoMark size={32} />
-              <button
-                onClick={() => setMobileOpen(false)}
-                className="rounded-lg p-2 text-slate-300 hover:bg-white/5"
-                aria-label="Close menu"
-              >
-                <X size={18} />
+          <div
+            className={cn(
+              "absolute inset-x-0 bottom-0 rounded-t-2xl border-t border-paper-200 bg-paper p-3 shadow-soft",
+              sheetClosing ? "animate-sheet-down" : "animate-sheet-up"
+            )}
+            style={{ paddingBottom: "calc(1rem + env(safe-area-inset-bottom))" }}
+          >
+            <button
+              onClick={closeSheet}
+              aria-label="Close menu"
+              className="mx-auto mb-3 mt-1 block h-1.5 w-10 rounded-full bg-paper-200"
+            />
+            <nav className="space-y-1">
+              {nav.map((item) => {
+                const Icon = ICONS[item.icon ?? "dashboard"];
+                const active = isActive(item.href);
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={closeSheet}
+                    className={cn(
+                      "flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold transition active:scale-[0.98]",
+                      active
+                        ? "bg-ink text-white"
+                        : "text-slate-600 hover:bg-paper-100"
+                    )}
+                  >
+                    <Icon size={19} className={cn(active && "text-brand-400")} />
+                    <span className="flex-1">{item.label}</span>
+                    {item.badge ? (
+                      <span className="inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-brand-500 px-1.5 text-[11px] font-semibold text-white">
+                        {item.badge > 99 ? "99+" : item.badge}
+                      </span>
+                    ) : active ? (
+                      <span className="h-1.5 w-1.5 rounded-full bg-brand-400" />
+                    ) : null}
+                  </Link>
+                );
+              })}
+            </nav>
+            <div className="mt-3 flex items-center gap-3 rounded-xl border border-paper-200 bg-white p-3">
+              <Avatar name={user.name} seed={user.id} size={40} />
+              <div className="min-w-0 flex-1">
+                <div className="truncate text-sm font-semibold text-ink">
+                  {user.name}
+                </div>
+                <div className="text-xs text-slate-500">
+                  {isCoach ? "Head Coach" : "Athlete"}
+                </div>
+              </div>
+              <button onClick={logout} className="btn-outline px-3 py-2 text-xs">
+                <LogOut size={14} /> Sign out
               </button>
             </div>
-            <div className="mt-2 flex-1 overflow-y-auto">
-              <NavLinks onNavigate={() => setMobileOpen(false)} />
-            </div>
-            <UserCard />
           </div>
         </div>
       )}
 
-      {/* Mobile bottom tab bar */}
-      <nav
-        className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t border-slate-200 bg-white/95 backdrop-blur lg:hidden"
-        style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+      {/* Mobile bottom tab bar: floating, rounded, icon-driven */}
+      <div
+        className="fixed inset-x-0 bottom-0 z-30 px-3 lg:hidden"
+        style={{ paddingBottom: "calc(0.7rem + env(safe-area-inset-bottom))" }}
       >
-        {bottomNav.map((item) => {
-          const Icon = ICONS[item.icon];
-          const active = isActive(item.href);
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={cn(
-                "relative flex flex-col items-center justify-center gap-0.5 py-2 text-[10px] font-medium transition",
-                active ? "text-brand-600" : "text-slate-500"
-              )}
-            >
-              <Icon size={21} strokeWidth={active ? 2.4 : 2} />
-              <span>{item.label}</span>
-              {item.badge ? (
-                <span className="absolute right-[calc(50%-1.4rem)] top-1 inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-brand-500 px-1 text-[9px] font-bold text-white">
-                  {item.badge > 9 ? "9+" : item.badge}
-                </span>
-              ) : null}
-            </Link>
-          );
-        })}
-        <button
-          onClick={() => setMobileOpen(true)}
-          className="flex flex-col items-center justify-center gap-0.5 py-2 text-[10px] font-medium text-slate-500"
-          aria-label="More"
-        >
-          <Menu size={21} />
-          <span>More</span>
-        </button>
-      </nav>
+        <nav className="mx-auto flex max-w-md items-stretch gap-1 rounded-2xl border border-paper-200 bg-white/80 p-1.5 shadow-soft backdrop-blur-xl">
+          {bottomNav.map((item) => {
+            const Icon = ICONS[item.icon ?? "dashboard"];
+            const active = isActive(item.href);
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={cn(
+                  "relative flex flex-1 flex-col items-center justify-center gap-1 rounded-xl py-2 text-[10px] font-semibold transition active:scale-95",
+                  active
+                    ? "bg-ink text-white shadow-sm"
+                    : "text-slate-500 hover:text-ink"
+                )}
+              >
+                <Icon
+                  size={20}
+                  strokeWidth={active ? 2.4 : 2}
+                  className={cn(active && "text-brand-400")}
+                />
+                <span>{item.label}</span>
+                {item.badge ? (
+                  <span className="absolute right-2 top-1 inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-brand-500 px-1 text-[9px] font-bold text-white">
+                    {item.badge > 9 ? "9+" : item.badge}
+                  </span>
+                ) : null}
+              </Link>
+            );
+          })}
+          <button
+            onClick={openSheet}
+            className="flex flex-1 flex-col items-center justify-center gap-1 rounded-xl py-2 text-[10px] font-semibold text-slate-500 transition hover:text-ink active:scale-95"
+            aria-label="More"
+          >
+            <Menu size={20} />
+            <span>More</span>
+          </button>
+        </nav>
+      </div>
 
       {/* Main content */}
       <main className="lg:ml-64">
-        <div className="mx-auto w-full max-w-6xl px-4 pt-6 pb-[calc(5.5rem+env(safe-area-inset-bottom))] sm:px-6 lg:px-8 lg:py-8">
+        <div
+          key={pathname}
+          className="mx-auto w-full max-w-6xl animate-fade-in px-4 pt-6 pb-[calc(6rem+env(safe-area-inset-bottom))] sm:px-6 lg:px-8 lg:py-8"
+        >
           {children}
         </div>
       </main>

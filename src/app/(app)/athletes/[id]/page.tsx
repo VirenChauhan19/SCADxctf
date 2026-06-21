@@ -8,18 +8,17 @@ import {
   Trophy,
   ShieldAlert,
   MessageSquare,
-  Activity,
-  CheckCircle2,
-  MessageCircleQuestion,
 } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { Avatar } from "@/components/ui/avatar";
-import { TypeBadge, StatusBadge } from "@/components/ui/badges";
+import { TypeBadge } from "@/components/ui/badges";
 import { EmptyState } from "@/components/ui/empty";
 import { PacesCard, GroupBadge } from "@/components/paces-card";
-import { parsePersonalBests, parsePaces, eventsList } from "@/lib/utils";
-import { fmtDate, fmtRelative } from "@/lib/date";
+import { cn, parsePersonalBests, parsePaces, eventsList } from "@/lib/utils";
+import { fmtDate, format } from "@/lib/date";
+import { statusMeta, workoutMeta } from "@/lib/constants";
+import { CalendarView, type CalEvent } from "@/components/calendar-view";
 
 export const dynamic = "force-dynamic";
 
@@ -57,7 +56,52 @@ export default async function AthleteDetailPage({
   const withFeedback = assignments.filter((a) => a.feedback);
   const pbs = parsePersonalBests(athlete.personalBests);
   const paces = parsePaces(athlete.paces);
-  const recent = assignments.slice(0, 8);
+
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+  const [upcoming, past] = await Promise.all([
+    prisma.assignment.findMany({
+      where: { athleteId: id, workout: { date: { gte: todayStart } } },
+      include: { workout: { select: { title: true, type: true, date: true } } },
+      orderBy: { workout: { date: "asc" } },
+      take: 7,
+    }),
+    prisma.assignment.findMany({
+      where: { athleteId: id, workout: { date: { lt: todayStart } } },
+      include: { workout: { select: { title: true, type: true, date: true } } },
+      orderBy: { workout: { date: "desc" } },
+      take: 7,
+    }),
+  ]);
+
+  // This athlete's full schedule, for the embedded calendar.
+  const nowISO = new Date().toISOString();
+  const calAssignments = await prisma.assignment.findMany({
+    where: { athleteId: id },
+    include: {
+      workout: {
+        select: {
+          title: true,
+          type: true,
+          date: true,
+          scope: true,
+          distance: true,
+          location: true,
+        },
+      },
+    },
+    orderBy: { workout: { date: "asc" } },
+  });
+  const athleteEvents: CalEvent[] = calAssignments.map((a) => ({
+    id: a.id,
+    title: a.workout.title,
+    type: a.workout.type,
+    dateISO: a.workout.date.toISOString(),
+    scope: a.workout.scope,
+    status: a.status,
+    distance: a.workout.distance,
+    location: a.workout.location,
+  }));
 
   return (
     <div>
@@ -74,7 +118,7 @@ export default async function AthleteDetailPage({
           <div className="flex items-center gap-4">
             <Avatar name={athlete.name} seed={athlete.id} size={64} />
             <div>
-              <h1 className="text-xl font-bold tracking-tight text-ink">
+              <h1 className="font-display text-2xl font-bold uppercase leading-none tracking-tight text-ink sm:text-3xl">
                 {athlete.name}
               </h1>
               <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-slate-500">
@@ -83,7 +127,7 @@ export default async function AthleteDetailPage({
                 {eventsList(athlete.events).map((e) => (
                   <span
                     key={e}
-                    className="rounded-md bg-slate-100 px-1.5 py-0.5 text-[11px] font-medium text-slate-600"
+                    className="rounded-md bg-paper-100 px-1.5 py-0.5 text-[11px] font-medium text-slate-600"
                   >
                     {e}
                   </span>
@@ -96,7 +140,7 @@ export default async function AthleteDetailPage({
           </Link>
         </div>
 
-        <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 border-t border-slate-100 pt-4 text-sm text-slate-600">
+        <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 border-t border-paper-200 pt-4 text-sm text-slate-600">
           <span className="inline-flex items-center gap-1.5">
             <Mail size={14} className="text-slate-400" />
             {athlete.email}
@@ -116,40 +160,54 @@ export default async function AthleteDetailPage({
         </div>
       </div>
 
-      {/* stats */}
+      {/* stats — editorial scoreboard */}
       <div className="mt-4 grid grid-cols-3 gap-3">
-        <div className="card p-4">
-          <div className="flex items-center gap-2 text-xs font-medium text-slate-500">
-            <Activity size={14} /> Completion
+        {[
+          { label: "Completion", value: `${completionRate}%` },
+          { label: "Completed", value: String(completed) },
+          { label: "To discuss", value: String(needsDiscussion) },
+        ].map((s, i) => (
+          <div key={s.label} className="card p-4">
+            <div className="flex items-center justify-between border-b border-paper-200 pb-2">
+              <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+                {s.label}
+              </span>
+              <span className="font-mono text-[10px] text-slate-400">
+                {String(i + 1).padStart(2, "0")}
+              </span>
+            </div>
+            <div className="mt-2.5 font-display text-3xl font-bold leading-none text-ink">
+              {s.value}
+            </div>
+            <span className="mt-3 block h-0.5 w-10 bg-brand-500" />
           </div>
-          <div className="mt-1 text-2xl font-bold text-ink">{completionRate}%</div>
-        </div>
-        <div className="card p-4">
-          <div className="flex items-center gap-2 text-xs font-medium text-slate-500">
-            <CheckCircle2 size={14} /> Completed
-          </div>
-          <div className="mt-1 text-2xl font-bold text-ink">{completed}</div>
-        </div>
-        <div className="card p-4">
-          <div className="flex items-center gap-2 text-xs font-medium text-slate-500">
-            <MessageCircleQuestion size={14} /> To discuss
-          </div>
-          <div className="mt-1 text-2xl font-bold text-ink">{needsDiscussion}</div>
-        </div>
+        ))}
       </div>
 
-      <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-3">
+      {/* training calendar */}
+      <section className="mt-5">
+        <h2 className="mb-3 flex items-center gap-2 font-display text-sm font-semibold uppercase tracking-[0.12em] text-ink">
+          <span className="h-3.5 w-1 rounded-full bg-brand-500" />
+          Training calendar
+        </h2>
+        <CalendarView events={athleteEvents} isCoach={false} nowISO={nowISO} />
+      </section>
+
+      <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-3">
         {/* feedback history */}
         <div className="space-y-4 lg:col-span-2">
           <section className="card p-5">
-            <h2 className="mb-3 text-sm font-semibold text-ink">Feedback history</h2>
+            <h2 className="mb-3 flex items-center gap-2 font-display text-sm font-semibold uppercase tracking-[0.12em] text-ink">
+              <span className="h-3.5 w-1 rounded-full bg-brand-500" />
+              Feedback history
+            </h2>
             {withFeedback.length === 0 ? (
               <EmptyState
                 title="No feedback logged yet"
-                description="When this athlete logs how a workout went, it shows up here — visible only to you."
+                description="When this athlete logs how a workout went, it shows up here, visible only to you."
               />
             ) : (
-              <ul className="divide-y divide-slate-100">
+              <ul className="divide-y divide-paper-100">
                 {withFeedback.map((a) => {
                   const f = a.feedback!;
                   return (
@@ -163,7 +221,7 @@ export default async function AthleteDetailPage({
                         </div>
                         <div className="flex items-center gap-2">
                           {f.effort != null && (
-                            <span className="rounded-md bg-slate-100 px-1.5 py-0.5 text-xs font-semibold text-slate-700">
+                            <span className="rounded-md bg-paper-100 px-1.5 py-0.5 text-xs font-semibold text-slate-700">
                               RPE {f.effort}
                             </span>
                           )}
@@ -230,7 +288,7 @@ export default async function AthleteDetailPage({
             </div>
             {athlete.emergencyName || athlete.emergencyPhone ? (
               <div className="mt-2 text-sm text-slate-600">
-                <div>{athlete.emergencyName ?? "—"}</div>
+                <div>{athlete.emergencyName ?? "Not set"}</div>
                 <div className="text-slate-500">{athlete.emergencyPhone ?? ""}</div>
               </div>
             ) : (
@@ -246,17 +304,67 @@ export default async function AthleteDetailPage({
           )}
 
           <section className="card p-5">
-            <h2 className="mb-2 text-sm font-semibold text-ink">Recent sessions</h2>
-            <ul className="space-y-2">
-              {recent.map((a) => (
-                <li key={a.id} className="flex items-center justify-between gap-2 text-sm">
-                  <span className="min-w-0 flex-1 truncate text-slate-600">
-                    {a.workout.title}
-                  </span>
-                  <StatusBadge status={a.status} />
-                </li>
-              ))}
-            </ul>
+            <h2 className="mb-3 flex items-center gap-2 font-display text-sm font-semibold uppercase tracking-[0.12em] text-ink">
+              <span className="h-3.5 w-1 rounded-full bg-brand-500" />
+              Schedule
+            </h2>
+            {upcoming.length === 0 && past.length === 0 ? (
+              <p className="text-sm text-slate-500">No sessions assigned yet.</p>
+            ) : (
+              <div className="space-y-4">
+                {upcoming.length > 0 && (
+                  <div>
+                    <div className="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+                      Upcoming
+                    </div>
+                    <ul className="space-y-1.5">
+                      {upcoming.slice(0, 6).map((a) => (
+                        <li key={a.id} className="flex items-center gap-2">
+                          <span className="w-11 shrink-0 font-mono text-[11px] text-slate-400">
+                            {format(a.workout.date, "MMM d")}
+                          </span>
+                          <span
+                            className={cn(
+                              "h-1.5 w-1.5 shrink-0 rounded-full",
+                              workoutMeta(a.workout.type).dot
+                            )}
+                          />
+                          <span className="min-w-0 flex-1 truncate text-sm text-slate-700">
+                            {a.workout.title}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {past.length > 0 && (
+                  <div>
+                    <div className="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+                      Recent
+                    </div>
+                    <ul className="space-y-1.5">
+                      {past.slice(0, 6).map((a) => {
+                        const sm = statusMeta(a.status);
+                        return (
+                          <li key={a.id} className="flex items-center gap-2">
+                            <span className="w-11 shrink-0 font-mono text-[11px] text-slate-400">
+                              {format(a.workout.date, "MMM d")}
+                            </span>
+                            <span
+                              className={cn("h-2 w-2 shrink-0 rounded-full", sm.dot)}
+                              title={sm.label}
+                            />
+                            <span className="min-w-0 flex-1 truncate text-sm text-slate-600">
+                              {a.workout.title}
+                            </span>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            )}
           </section>
         </div>
       </div>

@@ -39,7 +39,7 @@ export async function PATCH(req: NextRequest) {
       if (b[f] !== undefined) data[f] = clean(b[f]);
     }
 
-    // Optional password change — also revokes the user's other sessions.
+    // Optional password change; also revokes the user's other sessions.
     let passwordChanged = false;
     if (b.newPassword) {
       const newPassword = String(b.newPassword);

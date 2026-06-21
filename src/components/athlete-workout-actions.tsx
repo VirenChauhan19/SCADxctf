@@ -64,7 +64,7 @@ export function AthleteWorkoutActions({
   if (isRest) {
     return (
       <p className="text-sm text-slate-500">
-        Rest day — no need to check in. Recovery is part of the plan.
+        Rest day. No need to check in. Recovery is part of the plan.
       </p>
     );
   }
@@ -107,7 +107,7 @@ export function AthleteWorkoutActions({
       </button>
 
       {fb && (
-        <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm">
+        <div className="rounded-xl border border-paper-200 bg-paper-50 p-3 text-sm">
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-slate-600">
             {fb.effort != null && (
               <span>

@@ -450,6 +450,57 @@ async function main() {
   // Paige — unread for coach
   await dm(false, paige.id, "Coach, can we go over my 5K goal pace before the first meet?", subHours(new Date(), 8), false);
 
+  // ---------- team chat (GROUP): makes the app feel lived-in ----------
+  console.log("Creating team chat + photos...");
+  const base = new Date();
+  const ago = (d: number, h = 0) => new Date(base.getTime() - (d * 24 + h) * 3600 * 1000);
+
+  const teamChat: [string, string, Date][] = [
+    [coach.id, "Team chat is live. Use it for rides, logistics, and hyping each other up. Keep it positive, big season ahead.", ago(9)],
+    [viren.id, "Driving to the park trail tomorrow at 6:15am, got 2 spots if anyone needs a ride.", ago(7)],
+    [ryan.id, "I'm in, meet you by the dorms.", ago(6, 22)],
+    [corinne.id, "That tempo this morning hurt in the best way 😅 legs are absolutely toast", ago(5)],
+    [gray.id, "XT crew, pool at 4? keeping it easy like coach said", ago(4, 20)],
+    [coach.id, "Yes, easy aqua jog for the cross-training group today. Save the legs for Saturday's long run.", ago(4, 19)],
+    [paige.id, "New racing flats came in, breaking them in on the easy days 👟", ago(4)],
+    [viren.id, "Splits were way more even this week, the pacing talk helped a ton", ago(3)],
+    [coach.id, "Love to see it. Reminder: training recap due Sunday night. Two sentences minimum, be honest about how the body feels.", ago(2, 5)],
+    [ryan.id, "anyone else's calves wrecked from the hill repeats? rolling them out tonight", ago(2, 3)],
+    [corinne.id, "10/10 recommend the massage gun lol", ago(2, 1)],
+    [gray.id, "Carpool for Saturday's meet? trying to sort logistics", ago(1, 2)],
+    [coach.id, "Meet plan goes out tonight. Vans leave 7am sharp, be early. Pin your numbers the night before.", ago(0, 6)],
+    [viren.id, "Let's go 🔥 ready to compete", ago(0, 4)],
+    [paige.id, "so ready. thanks for the goal-pace chat coach, feeling confident", ago(0, 3)],
+  ];
+  for (const [senderId, body, when] of teamChat) {
+    await prisma.message.create({
+      data: { type: "GROUP", body, senderId, teamId: team.id, createdAt: when },
+    });
+  }
+
+  // ---------- team photos (PHOTOS) ----------
+  function photo(label: string, sub: string, c1: string, c2: string): string {
+    const svg =
+      `<svg xmlns='http://www.w3.org/2000/svg' width='900' height='900'>` +
+      `<defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'>` +
+      `<stop offset='0' stop-color='${c1}'/><stop offset='1' stop-color='${c2}'/></linearGradient></defs>` +
+      `<rect width='900' height='900' fill='url(#g)'/>` +
+      `<text x='50%' y='46%' font-family='Arial, sans-serif' font-size='66' font-weight='bold' fill='white' text-anchor='middle'>${label}</text>` +
+      `<text x='50%' y='55%' font-family='Arial, sans-serif' font-size='30' fill='rgba(255,255,255,0.85)' text-anchor='middle'>${sub}</text></svg>`;
+    return `data:image/svg+xml;base64,${Buffer.from(svg).toString("base64")}`;
+  }
+  const teamPhotos: [string, string, string, Date][] = [
+    [coach.id, "Sunrise long run at the park 🌅", photo("LONG RUN", "Sunrise at the park", "#C8920C", "#13171F"), ago(6)],
+    [viren.id, "Track Tuesday, 6x800 in the books", photo("TRACK TUESDAY", "6 x 800m", "#13171F", "#C8920C"), ago(4)],
+    [corinne.id, "Whole squad before the tempo", photo("THE SQUAD", "Piedmont Park", "#86600C", "#EAB308"), ago(3)],
+    [ryan.id, "Pre-meet shakeout 💪", photo("MEET DAY", "Shakeout + strides", "#0E1117", "#D49A06"), ago(0, 5)],
+  ];
+  for (const [senderId, body, imageUrl, when] of teamPhotos) {
+    await prisma.message.create({
+      data: { type: "PHOTOS", body, imageUrl, senderId, teamId: team.id, createdAt: when },
+    });
+  }
+
   const counts = {
     users: await prisma.user.count(),
     workouts: await prisma.workout.count(),

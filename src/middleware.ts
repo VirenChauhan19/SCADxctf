@@ -1,6 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
 
-const PUBLIC_PATHS = ["/login", "/signup"];
 const PROTECTED_PREFIXES = [
   "/dashboard",
   "/calendar",
@@ -40,7 +39,6 @@ function buildCsp(nonce: string): string {
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
   const hasSession = req.cookies.has("coach_session");
-  const isPublic = PUBLIC_PATHS.includes(pathname);
   const isProtected = PROTECTED_PREFIXES.some(
     (p) => pathname === p || pathname.startsWith(p + "/")
   );
@@ -48,9 +46,10 @@ export function middleware(req: NextRequest) {
   if (isProtected && !hasSession) {
     return NextResponse.redirect(new URL("/login", req.url));
   }
-  if (isPublic && hasSession) {
-    return NextResponse.redirect(new URL("/dashboard", req.url));
-  }
+  // Intentionally NOT redirecting public pages to /dashboard on cookie presence
+  // alone. A stale/expired cookie is "present" but invalid, and bouncing it here
+  // would loop forever with the page-level getCurrentUser() redirect. The
+  // login/signup pages send genuinely-authenticated users on to /dashboard.
 
   const nonce = btoa(
     String.fromCharCode(...crypto.getRandomValues(new Uint8Array(16)))

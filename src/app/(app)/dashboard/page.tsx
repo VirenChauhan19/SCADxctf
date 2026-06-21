@@ -144,7 +144,7 @@ export default async function DashboardPage() {
 
   const athleteRows = await prisma.user.findMany({
     where: { teamId, role: "ATHLETE", active: true },
-    select: { id: true, name: true },
+    select: { id: true, name: true, mileageGroup: true },
     orderBy: { name: "asc" },
   });
 

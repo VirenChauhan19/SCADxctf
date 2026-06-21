@@ -1,13 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, Users, User } from "lucide-react";
+import { Loader2, Users, User, Zap } from "lucide-react";
 import { Modal } from "./ui/modal";
 import { Field, FormError } from "./ui/field";
 import { Avatar } from "./ui/avatar";
 import { cn } from "@/lib/utils";
-import { WORKOUT_TYPE_ORDER, workoutMeta } from "@/lib/constants";
+import {
+  WORKOUT_TYPE_ORDER,
+  workoutMeta,
+  WORKOUT_PRESETS,
+  defaultWorkoutTitle,
+} from "@/lib/constants";
 import { format } from "@/lib/date";
 
 export type WorkoutInitial = {
@@ -36,7 +41,7 @@ export function WorkoutFormModal({
 }: {
   open: boolean;
   onClose: () => void;
-  athletes: { id: string; name: string }[];
+  athletes: { id: string; name: string; mileageGroup?: string | null }[];
   initial?: WorkoutInitial;
   defaultDateISO?: string;
 }) {
@@ -68,11 +73,36 @@ export function WorkoutFormModal({
     setSelected((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]));
   }
 
+  // Mileage groups (A/B/C) on the roster, for one-tap "assign to a group".
+  const groups = useMemo(
+    () =>
+      Array.from(
+        new Set(athletes.map((a) => a.mileageGroup).filter(Boolean) as string[])
+      ).sort(),
+    [athletes]
+  );
+  const groupIds = (g: string) =>
+    athletes.filter((a) => a.mileageGroup === g).map((a) => a.id);
+  const sameSet = (a: string[], b: string[]) =>
+    a.length === b.length && a.every((x) => b.includes(x));
+  function selectGroup(g: string) {
+    setScope("INDIVIDUAL");
+    setSelected(groupIds(g));
+  }
+
+  // One-tap quick-add: drop in sensible defaults for a routine session. The
+  // coach can still tweak any field (or the date / who it's for) before saving.
+  function applyPreset(p: (typeof WORKOUT_PRESETS)[number]) {
+    setType(p.type);
+    setTitle(p.title);
+    setDistance(p.distance ?? "");
+    setPace(p.pace ?? "");
+    setMainSet(p.mainSet ?? "");
+    setError(null);
+  }
+
   async function save() {
-    if (!title.trim()) {
-      setError("Please give the workout a title.");
-      return;
-    }
+    // Title is optional: the server fills it from the workout type if blank.
     if (scope === "INDIVIDUAL" && selected.length === 0) {
       setError("Select at least one athlete, or assign to the whole team.");
       return;
@@ -125,7 +155,7 @@ export function WorkoutFormModal({
       description={
         editing
           ? "Update the session details."
-          : "Build a session and assign it to the team or individual athletes."
+          : "Build a session and assign it to the whole team, a training group, or individual athletes."
       }
       size="lg"
       footer={
@@ -143,13 +173,52 @@ export function WorkoutFormModal({
       <div className="space-y-5">
         {error && <FormError message={error} />}
 
+        {!editing && (
+          <div>
+            <div className="mb-2 flex items-center gap-2">
+              <Zap size={14} className="text-brand-600" />
+              <span className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                Quick add
+              </span>
+              <span className="text-xs text-slate-400">Tap one to prefill, then Create</span>
+            </div>
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 stagger">
+              {WORKOUT_PRESETS.map((p) => {
+                const meta = workoutMeta(p.type);
+                const active = type === p.type && title === p.title;
+                return (
+                  <button
+                    key={p.key}
+                    type="button"
+                    onClick={() => applyPreset(p)}
+                    className={cn(
+                      "flex items-center gap-2 rounded-md border px-3 py-2 text-left text-sm font-medium transition-colors",
+                      active
+                        ? "border-brand-400 bg-brand-50 text-ink ring-1 ring-brand-300"
+                        : "border-slate-200 bg-white text-slate-700 hover:border-brand-300 hover:bg-brand-50/60"
+                    )}
+                  >
+                    <span className={cn("h-2.5 w-2.5 shrink-0 rounded-full", meta.dot)} />
+                    <span className="truncate">{p.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+            <div className="mt-5 h-px bg-slate-100" />
+          </div>
+        )}
+
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-          <Field label="Title" required className="sm:col-span-2">
+          <Field
+            label="Title"
+            hint="Optional. Defaults to the workout type."
+            className="sm:col-span-2"
+          >
             <input
               className="input"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="e.g. Track Workout — 6x800m"
+              placeholder={defaultWorkoutTitle(type)}
             />
           </Field>
           <Field label="Date" required>
@@ -262,12 +331,12 @@ export function WorkoutFormModal({
         </Field>
 
         <Field label="Assign to">
-          <div className="grid grid-cols-2 gap-2">
+          <div className="flex flex-wrap gap-2">
             <button
               type="button"
               onClick={() => setScope("TEAM")}
               className={cn(
-                "flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm font-semibold transition",
+                "flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-semibold transition",
                 scope === "TEAM"
                   ? "border-ink bg-ink text-white"
                   : "border-slate-300 bg-white text-slate-600 hover:bg-slate-50"
@@ -275,17 +344,36 @@ export function WorkoutFormModal({
             >
               <Users size={16} /> Whole team
             </button>
+            {groups.map((g) => {
+              const on = scope === "INDIVIDUAL" && sameSet(selected, groupIds(g));
+              return (
+                <button
+                  key={g}
+                  type="button"
+                  onClick={() => selectGroup(g)}
+                  className={cn(
+                    "rounded-lg border px-3 py-2 text-sm font-semibold transition",
+                    on
+                      ? "border-brand-500 bg-brand-50 text-ink ring-1 ring-brand-300"
+                      : "border-slate-300 bg-white text-slate-600 hover:bg-slate-50"
+                  )}
+                >
+                  Group {g}
+                </button>
+              );
+            })}
             <button
               type="button"
               onClick={() => setScope("INDIVIDUAL")}
               className={cn(
-                "flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm font-semibold transition",
-                scope === "INDIVIDUAL"
+                "flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-semibold transition",
+                scope === "INDIVIDUAL" &&
+                  !groups.some((g) => sameSet(selected, groupIds(g)))
                   ? "border-ink bg-ink text-white"
                   : "border-slate-300 bg-white text-slate-600 hover:bg-slate-50"
               )}
             >
-              <User size={16} /> Specific athletes
+              <User size={16} /> Pick athletes
             </button>
           </div>
         </Field>

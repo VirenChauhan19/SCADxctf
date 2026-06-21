@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { apiError, ok, ApiError, requireCoach } from "@/lib/api";
-import { isWorkoutType } from "@/lib/constants";
+import { isWorkoutType, defaultWorkoutTitle } from "@/lib/constants";
 
 const clean = (v: unknown): string | null => {
   const s = String(v ?? "").trim();
@@ -30,14 +30,14 @@ export async function PATCH(
   try {
     const coach = await requireCoach();
     const { id } = await params;
-    await loadOwned(id, coach.teamId);
+    const workout = await loadOwned(id, coach.teamId);
     const b = await req.json();
 
     const data: Record<string, unknown> = {};
     if (b.title !== undefined) {
-      const t = String(b.title).trim();
-      if (!t) throw new ApiError(400, "A workout title is required.");
-      data.title = t;
+      // Blank title falls back to the (new or existing) type's label.
+      const nextType = isWorkoutType(b.type) ? b.type : workout.type;
+      data.title = String(b.title).trim() || defaultWorkoutTitle(nextType);
     }
     if (b.type !== undefined && isWorkoutType(b.type)) data.type = b.type;
     if (b.date !== undefined) data.date = parseDate(b.date);

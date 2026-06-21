@@ -268,11 +268,11 @@ export function SettingsForm({
           </div>
         </section>
 
-        <section className="card border-slate-200 bg-slate-50 p-5">
+        <section className="card border-paper-200 bg-paper-50 p-5">
           <h2 className="text-sm font-semibold text-ink">Privacy</h2>
           <p className="mt-2 text-sm text-slate-600">
             Your post-workout feedback, soreness notes, and messages are private.
-            Only your coach can see your feedback — never other athletes.
+            Only your coach can see your feedback, never other athletes.
           </p>
         </section>
       </div>

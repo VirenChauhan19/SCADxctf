@@ -53,12 +53,12 @@ export function PacesCard({
       {(lrTarget || ezTarget) && (
         <div className="mb-3 flex gap-2 text-xs">
           {lrTarget && (
-            <span className="rounded-md bg-slate-100 px-2 py-1 text-slate-600">
+            <span className="rounded-md bg-paper-100 px-2 py-1 text-slate-600">
               Long run <span className="font-semibold text-ink">{lrTarget} min</span>
             </span>
           )}
           {ezTarget && (
-            <span className="rounded-md bg-slate-100 px-2 py-1 text-slate-600">
+            <span className="rounded-md bg-paper-100 px-2 py-1 text-slate-600">
               Easy <span className="font-semibold text-ink">{ezTarget} min</span>
             </span>
           )}
@@ -67,7 +67,7 @@ export function PacesCard({
 
       <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
         {visible.map(([label, value]) => (
-          <div key={label} className="flex items-center justify-between border-b border-slate-100 py-1 last:border-0">
+          <div key={label} className="flex items-center justify-between border-b border-paper-200 py-1 last:border-0">
             <span className="text-sm text-slate-500">{label}</span>
             <span className="font-mono text-sm font-semibold text-ink">{value}</span>
           </div>
@@ -75,7 +75,7 @@ export function PacesCard({
       </div>
 
       {(paces.doubleFreq || paces.xtFreq) && (
-        <div className="mt-3 flex gap-3 border-t border-slate-100 pt-3 text-xs text-slate-500">
+        <div className="mt-3 flex gap-3 border-t border-paper-200 pt-3 text-xs text-slate-500">
           {paces.doubleFreq && <span>Doubles: <span className="font-medium text-slate-700">{paces.doubleFreq}</span></span>}
           {paces.xtFreq && <span>Cross-train: <span className="font-medium text-slate-700">{paces.xtFreq}</span></span>}
         </div>

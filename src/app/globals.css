@@ -16,10 +16,26 @@
   }
   body {
     @apply bg-paper text-ink antialiased;
+    /* Phones get clean warm paper. The faint blueprint grid read as a
+       "sketched" graph-paper look on small screens, so it is desktop-only. */
+    background-image: linear-gradient(
+      180deg,
+      rgb(251 249 244 / 0.9),
+      rgb(244 241 233)
+    );
     font-feature-settings: "cv11", "ss01";
   }
+  @media (min-width: 1024px) {
+    body {
+      background-image:
+        linear-gradient(180deg, rgb(251 249 244 / 0.9), rgb(244 241 233)),
+        linear-gradient(90deg, rgb(19 23 31 / 0.03) 1px, transparent 1px),
+        linear-gradient(180deg, rgb(19 23 31 / 0.022) 1px, transparent 1px);
+      background-size: auto, 30px 30px, 30px 30px;
+    }
+  }
   ::selection {
-    background-color: #f6eac8; /* brand-100 */
+    background-color: #fcefc1; /* brand-100 */
     color: #13171f;
   }
   /* Thin, unobtrusive scrollbars for the chat / lists */
@@ -39,39 +55,107 @@
 
 @layer components {
   .card {
-    @apply rounded-2xl border border-paper-200 bg-white shadow-card;
+    @apply rounded-lg border border-paper-200 bg-white shadow-none;
   }
-  /* Clickable cards: subtle lift + shadow on hover */
   .card-link {
-    @apply transition duration-200 hover:-translate-y-0.5 hover:border-brand-200 hover:shadow-soft;
+    @apply transition-colors hover:border-ink/20 hover:bg-paper-50;
   }
-  /* Small uppercase gold label used above sections */
   .eyebrow {
-    @apply text-[11px] font-semibold uppercase tracking-[0.2em] text-brand-700;
+    @apply text-[11px] font-semibold uppercase tracking-[0.16em] text-brand-700;
   }
   .input {
     /* 16px on mobile prevents iOS Safari from auto-zooming on focus; 14px on sm+ */
-    @apply w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-base text-ink shadow-sm outline-none transition placeholder:text-slate-400 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 sm:text-sm;
+    @apply w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-base text-ink shadow-none outline-none transition placeholder:text-slate-400 focus:border-ink focus:ring-2 focus:ring-brand-500/20 sm:text-sm;
   }
   .label {
     @apply mb-1.5 block text-sm font-medium text-slate-700;
   }
   .btn {
-    @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition active:scale-[0.97] focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-paper disabled:cursor-not-allowed disabled:opacity-60 disabled:active:scale-100;
+    @apply inline-flex items-center justify-center gap-2 rounded-md px-4 py-2 text-sm font-semibold transition active:translate-y-px focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-paper disabled:cursor-not-allowed disabled:opacity-60 disabled:active:translate-y-0;
   }
   .btn-primary {
     @apply btn bg-ink text-white hover:bg-ink-700 focus-visible:ring-ink;
   }
   .btn-gold {
-    @apply btn bg-brand-500 text-white hover:bg-brand-600 focus-visible:ring-brand-500;
+    @apply btn bg-brand-400 text-ink hover:bg-brand-300 focus-visible:ring-brand-500;
   }
   .btn-ghost {
     @apply btn bg-transparent text-slate-700 hover:bg-slate-100 focus-visible:ring-slate-300;
   }
   .btn-outline {
-    @apply btn border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 focus-visible:ring-slate-300;
+    @apply btn border border-slate-300 bg-white text-slate-700 hover:border-ink/30 hover:bg-paper-50 focus-visible:ring-slate-300;
   }
   .badge {
-    @apply inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ring-inset;
+    @apply inline-flex items-center gap-1.5 rounded px-2 py-0.5 text-xs font-medium ring-1 ring-inset;
+  }
+  /* Animated gold underline for nav items and inline links. */
+  .link-underline {
+    @apply relative;
+  }
+  .link-underline::after {
+    content: "";
+    @apply absolute -bottom-0.5 left-0 h-0.5 w-full origin-left scale-x-0 bg-brand-400 transition-transform duration-200;
+  }
+  .link-underline:hover::after,
+  .link-underline:focus-visible::after {
+    @apply scale-x-100;
+  }
+}
+
+@layer utilities {
+  .hover-lift {
+    @apply transition-colors hover:border-ink/20 hover:bg-paper-50;
+  }
+
+  .stagger > * {
+    animation: fade-up 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+  .stagger > *:nth-child(1) {
+    animation-delay: 0ms;
+  }
+  .stagger > *:nth-child(2) {
+    animation-delay: 45ms;
+  }
+  .stagger > *:nth-child(3) {
+    animation-delay: 85ms;
+  }
+  .stagger > *:nth-child(4) {
+    animation-delay: 120ms;
+  }
+  .stagger > *:nth-child(5) {
+    animation-delay: 150ms;
+  }
+  .stagger > *:nth-child(6) {
+    animation-delay: 180ms;
+  }
+  .stagger > *:nth-child(7) {
+    animation-delay: 205ms;
+  }
+  .stagger > *:nth-child(n + 8) {
+    animation-delay: 225ms;
+  }
+}
+
+/* Explicit keyframes so the .stagger entrance works regardless of Tailwind purge. */
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Respect users who ask for less motion: neutralize animation and transitions. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
   }
 }

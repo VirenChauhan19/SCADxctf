@@ -11,7 +11,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     all = body?.all === true;
   } catch {
-    // No body — ordinary single-device logout.
+    // No body; ordinary single-device logout.
   }
 
   if (all) {

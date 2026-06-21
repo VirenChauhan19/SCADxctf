@@ -35,7 +35,7 @@ export default async function SettingsPage() {
           bio: user.bio,
           mileageGroup: user.mileageGroup,
         }}
-        teamName={team?.name ?? "—"}
+        teamName={team?.name ?? "Not set"}
         season={team?.season ?? null}
       />
     </div>

@@ -15,7 +15,7 @@ export function LogoMark({
       role="img"
       aria-label="SCAD Bees"
       className={cn(
-        "inline-block shrink-0 rounded-xl bg-white ring-1 ring-black/5",
+        "inline-block shrink-0 rounded-md bg-white ring-1 ring-black/10",
         className
       )}
       style={{
@@ -41,7 +41,7 @@ export function Wordmark({
     <div className={cn("flex items-center gap-2.5", className)}>
       <LogoMark />
       <div className="leading-tight">
-        <div className="text-sm font-bold tracking-tight text-white">
+        <div className="font-display text-sm font-bold uppercase tracking-[0.08em] text-white">
           SCAD Atlanta
         </div>
         {subtitle && (

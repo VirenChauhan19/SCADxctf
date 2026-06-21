@@ -17,9 +17,9 @@ const oswald = Oswald({
 });
 
 export const metadata: Metadata = {
-  title: "SCAD Atlanta Distance — Team Hub",
+  title: "SCAD Atlanta Distance Team Hub",
   description:
-    "Private team platform for the SCAD Atlanta distance squad — personalized schedules, calendar, messaging, and athlete feedback.",
+    "Private team platform for the SCAD Atlanta distance squad. Personalized schedules, calendar, messaging, and athlete feedback.",
   applicationName: "SCAD Distance",
   appleWebApp: { capable: true, title: "SCAD Distance", statusBarStyle: "default" },
   formatDetection: { telephone: false },
@@ -40,7 +40,20 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={`${inter.variable} ${oswald.variable}`}>
-      <body className="min-h-screen font-sans">{children}</body>
+      <body className="min-h-screen font-sans">
+        {/* Dev only: unregister any stale service worker left on this origin
+            (a common localhost cause of weird caching) and drop its caches.
+            Skipped in production so it never trips the strict CSP. */}
+        {process.env.NODE_ENV !== "production" && (
+          <script
+            dangerouslySetInnerHTML={{
+              __html:
+                "(function(){try{if('serviceWorker'in navigator){navigator.serviceWorker.getRegistrations().then(function(rs){rs.forEach(function(r){r.unregister()})});if(window.caches){caches.keys().then(function(ks){ks.forEach(function(k){caches.delete(k)})})}}}catch(e){}})();",
+            }}
+          />
+        )}
+        {children}
+      </body>
     </html>
   );
 }

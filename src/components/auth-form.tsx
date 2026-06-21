@@ -88,7 +88,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
           </h1>
           <p className="mt-5 max-w-sm text-[15px] leading-relaxed text-slate-300">
             Personalized schedules, a shared calendar, direct messaging, and
-            honest post-workout feedback — built for a coach and his runners,
+            honest post-workout feedback, built for a coach and his runners,
             not a social feed.
           </p>
           <div className="mt-8 flex items-center gap-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">
@@ -107,7 +107,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
       </div>
 
       {/* Form panel */}
-      <div className="flex flex-1 items-center justify-center bg-slate-50 px-5 py-10">
+      <div className="flex flex-1 items-center justify-center bg-paper-50 px-5 py-10">
         <div className="w-full max-w-sm">
           <div className="mb-8 flex items-center gap-3 lg:hidden">
             <LogoMark size={40} />
@@ -199,10 +199,10 @@ export function AuthForm({ mode }: { mode: Mode }) {
           {mode === "login" && (
             <div className="mt-6">
               <div className="relative my-4 text-center">
-                <span className="relative z-10 bg-slate-50 px-3 text-xs font-medium uppercase tracking-wide text-slate-400">
+                <span className="relative z-10 bg-paper-50 px-3 text-xs font-medium uppercase tracking-wide text-slate-400">
                   Try the demo
                 </span>
-                <span className="absolute inset-x-0 top-1/2 h-px bg-slate-200" />
+                <span className="absolute inset-x-0 top-1/2 h-px bg-paper-200" />
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <button

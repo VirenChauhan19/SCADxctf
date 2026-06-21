@@ -47,19 +47,19 @@ export function Modal({
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-4">
       <div
-        className="absolute inset-0 bg-ink/50 backdrop-blur-[2px] animate-fade-in"
+        className="absolute inset-0 animate-fade-in bg-ink/50 backdrop-blur-[1px]"
         onClick={onClose}
       />
       <div
         role="dialog"
         aria-modal="true"
         className={cn(
-          "relative z-10 flex max-h-[92vh] w-full flex-col overflow-hidden rounded-t-2xl bg-white shadow-soft animate-fade-in sm:rounded-2xl",
+          "relative z-10 flex max-h-[92vh] w-full flex-col overflow-hidden rounded-t-lg bg-white shadow-soft animate-sheet-up sm:rounded-lg sm:animate-pop",
           SIZES[size]
         )}
       >
         {(title || description) && (
-          <div className="flex items-start justify-between gap-4 border-b border-slate-100 px-5 py-4">
+          <div className="flex items-start justify-between gap-4 border-b border-paper-200 px-5 py-4">
             <div>
               {title && (
                 <h2 className="text-base font-semibold text-ink">{title}</h2>
@@ -70,7 +70,7 @@ export function Modal({
             </div>
             <button
               onClick={onClose}
-              className="-mr-1 rounded-lg p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
+              className="-mr-1 rounded-md p-1.5 text-slate-400 transition hover:bg-paper-100 hover:text-slate-600"
               aria-label="Close"
             >
               <X size={18} />
@@ -79,7 +79,7 @@ export function Modal({
         )}
         <div className="flex-1 overflow-y-auto scroll-thin px-5 py-4">{children}</div>
         {footer && (
-          <div className="flex items-center justify-end gap-2 border-t border-slate-100 bg-slate-50 px-5 py-3">
+          <div className="flex items-center justify-end gap-2 border-t border-paper-200 bg-paper-50 px-5 py-3">
             {footer}
           </div>
         )}

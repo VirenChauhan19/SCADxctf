@@ -7,7 +7,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 
@@ -50,6 +50,7 @@ model User {
   paces        String? // JSON: { ez, tempo, k10, k8, k6, k5, k3, mile, doubleFreq, xtFreq }
 
   lastReadAnnouncementsAt DateTime?
+  lastReadTeamChatAt      DateTime? // read cursor for the team group chat (read receipts)
   createdAt               DateTime  @default(now())
 
   teamId String?
@@ -130,8 +131,9 @@ model Feedback {
 
 model Message {
   id        String    @id @default(cuid())
-  type      String    @default("DIRECT") // DIRECT | ANNOUNCEMENT
-  body      String
+  type      String    @default("DIRECT") // DIRECT | ANNOUNCEMENT | GROUP | PHOTOS
+  body      String    @default("")
+  imageUrl  String? // optional attached image (resized data URL); used by chats + photos
   createdAt DateTime  @default(now())
   readAt    DateTime? // used by DIRECT messages
 

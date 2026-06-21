@@ -55,6 +55,7 @@ export type MessageDTO = {
   id: string;
   type: string;
   body: string;
+  imageUrl: string | null;
   senderId: string;
   recipientId: string | null;
   createdISO: string;
@@ -172,6 +173,7 @@ type AnyMessage = {
   id: string;
   type: string;
   body: string;
+  imageUrl?: string | null;
   senderId: string;
   recipientId: string | null;
   createdAt: Date;
@@ -183,9 +185,38 @@ export function toMessageDTO(m: AnyMessage): MessageDTO {
     id: m.id,
     type: m.type,
     body: m.body,
+    imageUrl: m.imageUrl ?? null,
     senderId: m.senderId,
     recipientId: m.recipientId,
     createdISO: m.createdAt.toISOString(),
     read: m.readAt != null,
+  };
+}
+
+// Group / photos channel messages carry the sender's name for display.
+export type GroupMessageDTO = {
+  id: string;
+  body: string;
+  imageUrl: string | null;
+  senderId: string;
+  senderName: string;
+  createdISO: string;
+};
+
+export function toGroupMessageDTO(m: {
+  id: string;
+  body: string;
+  imageUrl?: string | null;
+  senderId: string;
+  sender: { name: string };
+  createdAt: Date;
+}): GroupMessageDTO {
+  return {
+    id: m.id,
+    body: m.body,
+    imageUrl: m.imageUrl ?? null,
+    senderId: m.senderId,
+    senderName: m.sender.name,
+    createdISO: m.createdAt.toISOString(),
   };
 }

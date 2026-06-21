@@ -3,11 +3,7 @@
 import { useEffect } from "react";
 import Link from "next/link";
 import {
-  Megaphone,
-  MessageSquare,
-  CalendarDays,
   ArrowRight,
-  Flame,
   CheckCircle2,
 } from "lucide-react";
 import type { AssignmentDTO } from "@/lib/dto";
@@ -77,7 +73,7 @@ export function AthleteDashboard({
 
   return (
     <div>
-      <div className="mb-6">
+      <div className="mb-6 border-b border-paper-200 pb-4">
         <p className="eyebrow">{greeting(nowISO)}</p>
         <h1 className="mt-1 font-display text-3xl font-bold uppercase leading-none tracking-tight text-ink sm:text-[2.5rem]">
           {firstName}
@@ -89,7 +85,7 @@ export function AthleteDashboard({
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         {/* main column */}
-        <div className="space-y-6 lg:col-span-2">
+        <div className="space-y-6 lg:col-span-2 stagger">
           {/* Today */}
           <section>
             <h2 className="eyebrow mb-2">Today&apos;s session</h2>
@@ -145,7 +141,7 @@ export function AthleteDashboard({
                 Full schedule <ArrowRight size={13} />
               </Link>
             </div>
-            <div className="grid grid-cols-7 gap-1.5">
+            <div className="grid grid-cols-7 gap-1.5 stagger">
               {week.map((d) => {
                 const primary = d.assignments[0];
                 const type = primary?.workout.type ?? null;
@@ -155,9 +151,9 @@ export function AthleteDashboard({
                   <div
                     key={d.dateISO}
                     className={cn(
-                      "rounded-xl border p-2 text-center transition duration-200 hover:-translate-y-0.5",
+                      "rounded-lg border p-2 text-center transition-colors",
                       d.isToday
-                        ? "border-ink bg-ink text-white shadow-soft"
+                        ? "border-ink bg-ink text-white"
                         : "border-paper-200 bg-white hover:border-brand-200"
                     )}
                   >
@@ -176,7 +172,7 @@ export function AthleteDashboard({
                       {meta ? (
                         <span className={cn("h-2 w-2 rounded-full", meta.dot)} />
                       ) : (
-                        <span className="text-[10px] text-slate-300">—</span>
+                        <span className="text-[10px] text-slate-300">·</span>
                       )}
                     </div>
                     <div
@@ -204,7 +200,7 @@ export function AthleteDashboard({
         </div>
 
         {/* sidebar */}
-        <div className="space-y-6">
+        <div className="space-y-6 stagger">
           <PacesCard
             group={group}
             lrTarget={lrTarget}
@@ -213,11 +209,8 @@ export function AthleteDashboard({
           />
           {/* week stat */}
           <div className="card p-5">
-            <div className="flex items-center gap-2 text-brand-700">
-              <Flame size={14} />
-              <span className="text-[11px] font-semibold uppercase tracking-[0.2em]">
-                This week
-              </span>
+            <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-brand-700">
+              This week
             </div>
             <div className="mt-2 flex items-end gap-2">
               <span className="font-display text-4xl font-bold leading-none text-ink">
@@ -240,8 +233,8 @@ export function AthleteDashboard({
           {/* announcement */}
           <div className="card p-5">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
-                <Megaphone size={14} /> Latest announcement
+              <div className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
+                Latest announcement
               </div>
             </div>
             {latestAnnouncement ? (
@@ -267,8 +260,8 @@ export function AthleteDashboard({
           {/* messages */}
           <div className="card p-5">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
-                <MessageSquare size={14} /> Coach messages
+              <div className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
+                Coach messages
               </div>
               {unreadCount > 0 && (
                 <span className="badge bg-brand-500 text-white ring-0">
@@ -300,8 +293,8 @@ export function AthleteDashboard({
             href="/calendar"
             className="card card-link flex items-center gap-3 p-5"
           >
-            <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-ink text-brand-400">
-              <CalendarDays size={18} />
+            <span className="font-mono text-xs font-semibold text-brand-700">
+              CAL
             </span>
             <div>
               <div className="text-sm font-semibold text-ink">Calendar</div>

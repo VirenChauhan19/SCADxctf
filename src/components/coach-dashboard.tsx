@@ -3,13 +3,8 @@
 import { useState } from "react";
 import Link from "next/link";
 import {
-  Users,
-  MessageCircleQuestion,
-  MessageSquare,
   Plus,
-  Megaphone,
   ArrowRight,
-  Activity,
 } from "lucide-react";
 import { WorkoutFormModal } from "./workout-form-modal";
 import { AnnouncementModal } from "./announcement-modal";
@@ -64,30 +59,30 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
   );
 }
 
-// Editorial "scoreboard" stat — big condensed number, no pastel icon chip.
+// Editorial "scoreboard" stat: big condensed number, no pastel icon chip.
 function Stat({
-  icon,
+  index,
   label,
   value,
   suffix,
 }: {
-  icon: React.ReactNode;
+  index: string;
   label: string;
   value: number;
   suffix?: string;
 }) {
   return (
     <div className="card p-4 sm:p-5">
-      <div className="flex items-center gap-1.5 text-slate-400">
-        {icon}
-        <span className="text-[10px] font-semibold uppercase tracking-[0.16em]">
+      <div className="flex items-center justify-between border-b border-paper-200 pb-2">
+        <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500">
           {label}
         </span>
+        <span className="font-mono text-[10px] text-slate-400">{index}</span>
       </div>
       <div className="mt-2.5 font-display text-4xl font-bold leading-none text-ink sm:text-[2.75rem]">
         <CountUp value={value} suffix={suffix} />
       </div>
-      <span className="mt-3 block h-1 w-8 rounded-full bg-brand-500" />
+      <span className="mt-3 block h-0.5 w-10 bg-brand-500" />
     </div>
   );
 }
@@ -141,7 +136,7 @@ export function CoachDashboard({
 
   return (
     <div>
-      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+      <div className="mb-6 flex flex-col gap-3 border-b border-paper-200 pb-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="eyebrow">{coachFirstName ? `Coach ${coachFirstName}` : "Coach"}</p>
           <h1 className="mt-1 font-display text-3xl font-bold uppercase leading-none tracking-tight text-ink sm:text-[2.5rem]">
@@ -154,7 +149,7 @@ export function CoachDashboard({
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <button className="btn-outline" onClick={() => setAnnounceOpen(true)}>
-            <Megaphone size={16} /> Announce
+            Announce
           </button>
           <button className="btn-gold" onClick={() => setWorkoutOpen(true)}>
             <Plus size={16} /> New workout
@@ -163,25 +158,25 @@ export function CoachDashboard({
       </div>
 
       {/* scoreboard */}
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 stagger">
         <Stat
-          icon={<Users size={14} />}
+          index="01"
           label="Active athletes"
           value={stats.athleteCount}
         />
         <Stat
-          icon={<Activity size={14} />}
+          index="02"
           label="Week completion"
           value={stats.weekCompletionPct}
           suffix="%"
         />
         <Stat
-          icon={<MessageCircleQuestion size={14} />}
+          index="03"
           label="Need to discuss"
           value={stats.needsDiscussion}
         />
         <Stat
-          icon={<MessageSquare size={14} />}
+          index="04"
           label="Unread messages"
           value={stats.unreadMessages}
         />
@@ -189,7 +184,7 @@ export function CoachDashboard({
 
       <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
         {/* main */}
-        <div className="space-y-6 lg:col-span-2">
+        <div className="space-y-6 lg:col-span-2 stagger">
           {/* Today */}
           <section className="card p-5">
             <div className="mb-4 flex items-center justify-between">
@@ -328,7 +323,7 @@ export function CoachDashboard({
         </div>
 
         {/* sidebar */}
-        <div className="space-y-6">
+        <div className="space-y-6 stagger">
           {/* Roster today */}
           <section className="card p-5">
             <div className="mb-3 flex items-center justify-between">

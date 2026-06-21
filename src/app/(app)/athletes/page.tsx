@@ -85,7 +85,7 @@ export default async function AthletesPage() {
     <div>
       <PageHeader
         title="Athletes"
-        subtitle="Your roster — add runners, edit profiles, and review their feedback."
+        subtitle="Your roster. Add runners, edit profiles, and review their feedback."
       />
       <AthletesManager athletes={roster} />
     </div>

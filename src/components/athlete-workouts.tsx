@@ -43,7 +43,7 @@ function Card({ a }: { a: AssignmentDTO }) {
           <p className="mt-3 text-sm text-slate-500">{a.workout.notes}</p>
         )}
 
-        <div className="mt-4 border-t border-slate-100 pt-4">
+        <div className="mt-4 border-t border-paper-200 pt-4">
           <AthleteWorkoutActions assignment={a} />
         </div>
       </div>
@@ -90,9 +90,15 @@ export function AthleteWorkouts({
   return (
     <div className="space-y-6">
       <section>
-        <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
-          Upcoming · {upcoming.length}
-        </h2>
+        <div className="mb-3 flex items-center justify-between border-b border-paper-200 pb-2">
+          <h2 className="flex items-center gap-2 font-display text-sm font-semibold uppercase tracking-[0.12em] text-ink">
+            <span className="h-3.5 w-1 rounded-full bg-brand-500" />
+            Upcoming
+          </h2>
+          <span className="font-mono text-[11px] text-slate-400">
+            {String(upcoming.length).padStart(2, "0")}
+          </span>
+        </div>
         {upcoming.length === 0 ? (
           <p className="text-sm text-slate-500">Nothing scheduled ahead right now.</p>
         ) : (
@@ -106,9 +112,15 @@ export function AthleteWorkouts({
 
       {past.length > 0 && (
         <section>
-          <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
-            Earlier
-          </h2>
+          <div className="mb-3 flex items-center justify-between border-b border-paper-200 pb-2">
+            <h2 className="flex items-center gap-2 font-display text-sm font-semibold uppercase tracking-[0.12em] text-ink">
+              <span className="h-3.5 w-1 rounded-full bg-slate-300" />
+              Earlier
+            </h2>
+            <span className="font-mono text-[11px] text-slate-400">
+              {String(past.length).padStart(2, "0")}
+            </span>
+          </div>
           <div className="space-y-3">
             {past.map((a) => (
               <Card key={a.id} a={a} />

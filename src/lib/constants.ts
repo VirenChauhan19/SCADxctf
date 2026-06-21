@@ -20,7 +20,7 @@ export type AssignmentStatus =
   | "SKIPPED"
   | "NEEDS_DISCUSSION";
 
-export type MessageType = "DIRECT" | "ANNOUNCEMENT";
+export type MessageType = "DIRECT" | "ANNOUNCEMENT" | "GROUP" | "PHOTOS";
 
 type TypeMeta = {
   label: string;
@@ -109,6 +109,41 @@ export function isWorkoutType(v: unknown): v is WorkoutType {
 
 export function workoutMeta(type: string): TypeMeta {
   return WORKOUT_TYPES[(isWorkoutType(type) ? type : "EASY") as WorkoutType];
+}
+
+/**
+ * One-tap "quick add" presets for the coach's New Workout form. Tapping a preset
+ * fills the form with sensible defaults so a routine session is two taps
+ * (preset → Create). The coach can still tweak anything before saving.
+ */
+export type WorkoutPreset = {
+  key: string;
+  label: string;
+  type: WorkoutType;
+  title: string;
+  distance?: string;
+  pace?: string;
+  mainSet?: string;
+};
+
+export const WORKOUT_PRESETS: WorkoutPreset[] = [
+  { key: "easy", label: "Easy Run", type: "EASY", title: "Easy Run", pace: "Conversational" },
+  { key: "long", label: "Long Run", type: "LONG_RUN", title: "Long Run", pace: "Easy to moderate" },
+  { key: "workout", label: "Workout", type: "WORKOUT", title: "Workout", pace: "See your race paces" },
+  {
+    key: "strides",
+    label: "Strides",
+    type: "EASY",
+    title: "Easy + Strides",
+    mainSet: "Easy run + 4-6 x 100m strides at smooth, fast turnover",
+  },
+  { key: "rest", label: "Rest Day", type: "REST", title: "Rest Day" },
+  { key: "race", label: "Race Day", type: "RACE", title: "Race Day", pace: "Race effort" },
+];
+
+/** Fallback workout title when the coach leaves it blank: the type's label. */
+export function defaultWorkoutTitle(type: string): string {
+  return workoutMeta(type).label;
 }
 
 type StatusMeta = { label: string; chip: string; dot: string };

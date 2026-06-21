@@ -25,13 +25,13 @@ export function WorkoutDetail({
       {(workout.distance || workout.pace) && (
         <div className="flex flex-wrap gap-2">
           {workout.distance && (
-            <span className="inline-flex items-center gap-1.5 rounded-lg bg-slate-100 px-2.5 py-1.5 text-sm font-medium text-slate-700">
+            <span className="inline-flex items-center gap-1.5 rounded-lg bg-paper-100 px-2.5 py-1.5 text-sm font-medium text-slate-700">
               <Ruler size={14} className="text-slate-400" />
               {workout.distance}
             </span>
           )}
           {workout.pace && (
-            <span className="inline-flex items-center gap-1.5 rounded-lg bg-slate-100 px-2.5 py-1.5 text-sm font-medium text-slate-700">
+            <span className="inline-flex items-center gap-1.5 rounded-lg bg-paper-100 px-2.5 py-1.5 text-sm font-medium text-slate-700">
               <Gauge size={14} className="text-slate-400" />
               {workout.pace}
             </span>
@@ -67,7 +67,7 @@ export function WorkoutDetail({
       )}
 
       {workout.notes && (
-        <div className="rounded-xl bg-slate-50 p-3">
+        <div className="rounded-xl bg-paper-50 p-3">
           <div className="text-xs font-semibold uppercase tracking-wide text-slate-400">
             Coach notes
           </div>

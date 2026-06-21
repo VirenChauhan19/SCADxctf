@@ -18,7 +18,7 @@ let cachedSecret: Uint8Array | null = null;
 
 /**
  * Resolves the JWT signing secret lazily (so a missing secret fails at runtime,
- * not at build time). In production a strong, explicitly-set secret is REQUIRED —
+ * not at build time). In production a strong, explicitly-set secret is REQUIRED;
  * there is no hardcoded fallback, so a leaked repo can't be used to forge sessions.
  */
 function getSecret(): Uint8Array {
@@ -36,7 +36,7 @@ function getSecret(): Uint8Array {
     }
     cachedSecret = new TextEncoder().encode(fromEnv);
   } else {
-    // Development convenience only — never reached in production.
+    // Development convenience only; never reached in production.
     cachedSecret = new TextEncoder().encode(
       fromEnv || "dev-only-insecure-secret-change-me"
     );
@@ -59,7 +59,7 @@ let dummyHash: string | null = null;
 
 /**
  * Runs a throwaway bcrypt comparison so that a login attempt for a non-existent
- * account takes about as long as one for a real account — closing the timing
+ * account takes about as long as one for a real account, closing the timing
  * side-channel that would otherwise let an attacker enumerate valid emails.
  */
 export async function equalizePasswordTiming(password: string): Promise<void> {

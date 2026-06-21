@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, Pencil, Trash2, Users, User, Loader2 } from "lucide-react";
 import { WorkoutFormModal, type WorkoutInitial } from "./workout-form-modal";
 import { Modal } from "./ui/modal";
+import { Avatar } from "./ui/avatar";
 import { TypeBadge } from "./ui/badges";
 import { EmptyState } from "./ui/empty";
 import { workoutMeta } from "@/lib/constants";
@@ -31,6 +32,17 @@ export function CoachWorkouts({
   const [deleting, setDeleting] = useState<CoachWorkoutRow | null>(null);
   const [busy, setBusy] = useState(false);
 
+  // Resolve assigned athlete ids to names so individual workouts show WHO has them.
+  const nameById = useMemo(
+    () => new Map(athletes.map((a) => [a.id, a.name])),
+    [athletes]
+  );
+  const firstName = (id: string) => (nameById.get(id) ?? "?").split(" ")[0];
+  const assigneeLabel = (ids: string[]) =>
+    ids.length <= 2
+      ? ids.map(firstName).join(", ")
+      : `${ids.slice(0, 2).map(firstName).join(", ")} +${ids.length - 2} more`;
+
   const todayKey = format(nowISO, "yyyy-MM-dd");
   const upcoming = workouts
     .filter((w) => format(w.dateISO, "yyyy-MM-dd") >= todayKey)
@@ -55,12 +67,14 @@ export function CoachWorkouts({
     const pct = w.total ? Math.round((w.completed / w.total) * 100) : 0;
     const isRest = w.type === "REST";
     return (
-      <div className="card flex items-center gap-4 p-4">
+      <div className="card hover-lift flex items-center gap-4 p-4">
         <div className="flex w-14 shrink-0 flex-col items-center">
-          <span className="text-[11px] font-semibold uppercase text-slate-400">
+          <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
             {format(w.dateISO, "MMM")}
           </span>
-          <span className="text-xl font-bold text-ink">{format(w.dateISO, "d")}</span>
+          <span className="font-display text-2xl font-bold leading-none text-ink">
+            {format(w.dateISO, "d")}
+          </span>
           <span className="text-[11px] text-slate-400">{format(w.dateISO, "EEE")}</span>
         </div>
         <div className={cn("h-12 w-1 shrink-0 rounded-full", workoutMeta(w.type).bar)} />
@@ -78,11 +92,25 @@ export function CoachWorkouts({
           <div className="mt-1 text-xs text-slate-500">
             {[w.distance, w.pace].filter(Boolean).join(" · ") || "No distance set"}
           </div>
+          {w.scope === "INDIVIDUAL" && w.athleteIds.length > 0 && (
+            <div className="mt-1.5 flex items-center gap-2">
+              <div className="flex -space-x-1.5">
+                {w.athleteIds.slice(0, 5).map((id) => (
+                  <span key={id} className="rounded-full ring-2 ring-white">
+                    <Avatar name={nameById.get(id) ?? "?"} seed={id} size={20} />
+                  </span>
+                ))}
+              </div>
+              <span className="truncate text-xs text-slate-500">
+                {assigneeLabel(w.athleteIds)}
+              </span>
+            </div>
+          )}
           {!isRest && (
             <div className="mt-2 flex items-center gap-2">
-              <div className="h-1.5 w-28 overflow-hidden rounded-full bg-slate-100">
+              <div className="h-1.5 w-28 overflow-hidden rounded-full bg-paper-200">
                 <div
-                  className="h-full rounded-full bg-emerald-500"
+                  className="h-full rounded-full bg-emerald-500 transition-[width] duration-700 ease-out"
                   style={{ width: `${pct}%` }}
                 />
               </div>
@@ -95,7 +123,7 @@ export function CoachWorkouts({
         <div className="flex shrink-0 items-center gap-1">
           <button
             onClick={() => setEditing(w)}
-            className="rounded-lg p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+            className="rounded-lg p-2 text-slate-400 transition hover:bg-paper-100 hover:text-slate-700"
             title="Edit"
           >
             <Pencil size={16} />
@@ -133,13 +161,19 @@ export function CoachWorkouts({
       ) : (
         <div className="space-y-6">
           <section>
-            <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
-              Upcoming · {upcoming.length}
-            </h2>
+            <div className="mb-3 flex items-center justify-between border-b border-paper-200 pb-2">
+              <h2 className="flex items-center gap-2 font-display text-sm font-semibold uppercase tracking-[0.12em] text-ink">
+                <span className="h-3.5 w-1 rounded-full bg-brand-500" />
+                Upcoming
+              </h2>
+              <span className="font-mono text-[11px] text-slate-400">
+                {String(upcoming.length).padStart(2, "0")}
+              </span>
+            </div>
             {upcoming.length === 0 ? (
               <p className="text-sm text-slate-500">Nothing scheduled ahead.</p>
             ) : (
-              <div className="space-y-2">
+              <div className="space-y-2 stagger">
                 {upcoming.map((w) => (
                   <Row key={w.id} w={w} />
                 ))}
@@ -149,10 +183,16 @@ export function CoachWorkouts({
 
           {past.length > 0 && (
             <section>
-              <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
-                Earlier
-              </h2>
-              <div className="space-y-2 opacity-90">
+              <div className="mb-3 flex items-center justify-between border-b border-paper-200 pb-2">
+                <h2 className="flex items-center gap-2 font-display text-sm font-semibold uppercase tracking-[0.12em] text-ink">
+                  <span className="h-3.5 w-1 rounded-full bg-slate-300" />
+                  Earlier
+                </h2>
+                <span className="font-mono text-[11px] text-slate-400">
+                  {String(past.length).padStart(2, "0")}
+                </span>
+              </div>
+              <div className="space-y-2 opacity-90 stagger">
                 {past.map((w) => (
                   <Row key={w.id} w={w} />
                 ))}

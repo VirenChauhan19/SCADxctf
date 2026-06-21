@@ -1,11 +1,11 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { apiError, ok, ApiError, requireCoach } from "@/lib/api";
-import { isWorkoutType } from "@/lib/constants";
+import { isWorkoutType, defaultWorkoutTitle } from "@/lib/constants";
 
 function parseDate(input: unknown): Date {
   const s = String(input ?? "");
-  // From <input type="date"> we get "yyyy-MM-dd" — anchor to 7:00 AM local.
+  // From <input type="date"> we get "yyyy-MM-dd", anchored to 7:00 AM local.
   const date = /^\d{4}-\d{2}-\d{2}$/.test(s) ? new Date(`${s}T07:00:00`) : new Date(s);
   if (isNaN(date.getTime())) throw new ApiError(400, "Please choose a valid date.");
   return date;
@@ -22,9 +22,9 @@ export async function POST(req: NextRequest) {
     if (!coach.teamId) throw new ApiError(400, "No team found for this coach.");
     const b = await req.json();
 
-    const title = String(b.title ?? "").trim();
-    if (!title) throw new ApiError(400, "A workout title is required.");
     const type = isWorkoutType(b.type) ? b.type : "EASY";
+    // Title is optional: fall back to the workout type's label (e.g. "Easy Run").
+    const title = String(b.title ?? "").trim() || defaultWorkoutTitle(type);
     const date = parseDate(b.date);
     const scope = b.scope === "INDIVIDUAL" ? "INDIVIDUAL" : "TEAM";
 
