@@ -18,7 +18,12 @@ export default async function WorkoutsPage() {
   if (user.role === "COACH") {
     const workouts = await prisma.workout.findMany({
       where: { teamId: user.teamId ?? undefined },
-      include: { assignments: { select: { athleteId: true, status: true } } },
+      include: {
+        assignments: {
+          where: { athlete: { active: true } },
+          select: { athleteId: true, status: true },
+        },
+      },
       orderBy: { date: "asc" },
     });
     const athletes = await prisma.user.findMany({

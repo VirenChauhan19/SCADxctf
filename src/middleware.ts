@@ -11,20 +11,29 @@ const PROTECTED_PREFIXES = [
 
 const isDev = process.env.NODE_ENV !== "production";
 
+// Firebase / Google Analytics (gtag) endpoints. Allow-listed so the strict
+// production CSP doesn't block measurement. Analytics only loads in production
+// (see <FirebaseAnalytics/> in the root layout), so dev keeps the tighter policy.
+const GA_SCRIPT = "https://www.googletagmanager.com";
+const GA_CONNECT =
+  "https://www.googletagmanager.com https://www.google-analytics.com https://*.google-analytics.com https://*.analytics.google.com";
+const GA_IMG = "https://www.google-analytics.com https://*.google-analytics.com";
+
 function buildCsp(nonce: string): string {
   // Production locks scripts to a per-request nonce (no 'unsafe-inline'); dev needs
   // eval + a websocket for Fast Refresh. Styles keep 'unsafe-inline' because
   // next/font and React inject inline <style> without a nonce.
   const scriptSrc = isDev
     ? "'self' 'unsafe-inline' 'unsafe-eval'"
-    : `'self' 'nonce-${nonce}' 'strict-dynamic'`;
-  const connectSrc = isDev ? "'self' ws:" : "'self'";
+    : `'self' 'nonce-${nonce}' 'strict-dynamic' ${GA_SCRIPT}`;
+  const connectSrc = isDev ? "'self' ws:" : `'self' ${GA_CONNECT}`;
+  const imgSrc = isDev ? "'self' data:" : `'self' data: ${GA_IMG}`;
 
   return [
     "default-src 'self'",
     `script-src ${scriptSrc}`,
     "style-src 'self' 'unsafe-inline'",
-    "img-src 'self' data:",
+    `img-src ${imgSrc}`,
     "font-src 'self'",
     `connect-src ${connectSrc}`,
     "object-src 'none'",

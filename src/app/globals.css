@@ -55,10 +55,10 @@
 
 @layer components {
   .card {
-    @apply rounded-lg border border-paper-200 bg-white shadow-none;
+    @apply rounded-lg border border-paper-200 bg-white shadow-none transition-all duration-200 ease-out;
   }
   .card-link {
-    @apply transition-colors hover:border-ink/20 hover:bg-paper-50;
+    @apply hover:-translate-y-0.5 hover:border-ink/20 hover:bg-paper-50 hover:shadow-soft;
   }
   .eyebrow {
     @apply text-[11px] font-semibold uppercase tracking-[0.16em] text-brand-700;
@@ -104,7 +104,7 @@
 
 @layer utilities {
   .hover-lift {
-    @apply transition-colors hover:border-ink/20 hover:bg-paper-50;
+    @apply transition-all duration-200 ease-out hover:-translate-y-0.5 hover:border-ink/20 hover:bg-paper-50 hover:shadow-soft;
   }
 
   .stagger > * {

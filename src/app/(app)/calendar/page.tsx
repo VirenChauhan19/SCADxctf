@@ -18,8 +18,10 @@ export default async function CalendarPage() {
     const workouts = await prisma.workout.findMany({
       where: { teamId: user.teamId },
       include: {
-        _count: { select: { assignments: true } },
-        assignments: { select: { athleteId: true } },
+        assignments: {
+          where: { athlete: { active: true } },
+          select: { athleteId: true },
+        },
       },
       orderBy: { date: "asc" },
     });
@@ -29,7 +31,7 @@ export default async function CalendarPage() {
       type: w.type,
       dateISO: w.date.toISOString(),
       scope: w.scope,
-      assignedCount: w._count.assignments,
+      assignedCount: w.assignments.length,
       assigneeIds: w.assignments.map((a) => a.athleteId),
       distance: w.distance,
       location: w.location,

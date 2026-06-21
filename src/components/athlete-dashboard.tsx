@@ -75,7 +75,7 @@ export function AthleteDashboard({
     <div>
       <div className="mb-6 border-b border-paper-200 pb-4">
         <p className="eyebrow">{greeting(nowISO)}</p>
-        <h1 className="mt-1 font-display text-3xl font-bold uppercase leading-none tracking-tight text-ink sm:text-[2.5rem]">
+        <h1 className="mt-1 font-display text-3xl font-bold uppercase leading-none tracking-tight text-ink sm:text-[2.5rem] xl:text-5xl">
           {firstName}
         </h1>
         <p className="mt-1.5 text-sm text-slate-500">
@@ -83,7 +83,7 @@ export function AthleteDashboard({
         </p>
       </div>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3 xl:gap-8">
         {/* main column */}
         <div className="space-y-6 lg:col-span-2 stagger">
           {/* Today */}

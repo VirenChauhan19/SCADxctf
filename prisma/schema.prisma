@@ -1,13 +1,13 @@
 // SCAD Running Coach — data model
-// NOTE: SQLite does not support native enums, so role / type / status fields
-// are stored as strings and validated in the application layer (see src/lib/constants.ts).
+// NOTE: role / type / status fields are stored as strings and validated in the
+// application layer (see src/lib/constants.ts) rather than as native DB enums.
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
