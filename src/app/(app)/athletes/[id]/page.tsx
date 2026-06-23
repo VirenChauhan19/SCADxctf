@@ -19,6 +19,7 @@ import { cn, parsePersonalBests, parsePaces, eventsList } from "@/lib/utils";
 import { fmtDate, format } from "@/lib/date";
 import { statusMeta, workoutMeta } from "@/lib/constants";
 import { CalendarView, type CalEvent } from "@/components/calendar-view";
+import { AthleteNoteEditor } from "@/components/athlete-note-editor";
 
 export const dynamic = "force-dynamic";
 
@@ -73,6 +74,15 @@ export default async function AthleteDetailPage({
       take: 7,
     }),
   ]);
+
+  // Per-athlete personal notes the coach can edit on each upcoming session.
+  const noteItems = upcoming.map((a) => ({
+    id: a.id,
+    title: a.workout.title,
+    type: a.workout.type,
+    dateISO: a.workout.date.toISOString(),
+    note: a.customNote,
+  }));
 
   // This athlete's full schedule, for the embedded calendar.
   const nowISO = new Date().toISOString();
@@ -192,6 +202,14 @@ export default async function AthleteDetailPage({
         </h2>
         <CalendarView events={athleteEvents} isCoach={false} nowISO={nowISO} />
       </section>
+
+      {/* coach edits the private per-athlete note for each upcoming workout */}
+      <div className="mt-5">
+        <AthleteNoteEditor
+          athleteFirstName={athlete.name.split(" ")[0]}
+          items={noteItems}
+        />
+      </div>
 
       <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-3">
         {/* feedback history */}

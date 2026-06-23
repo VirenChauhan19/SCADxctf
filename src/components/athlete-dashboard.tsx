@@ -73,16 +73,30 @@ export function AthleteDashboard({
 
   return (
     <div>
-      <div className="mb-6 overflow-hidden rounded-lg border border-ink/10 bg-ink p-5 text-white shadow-soft sm:p-6">
-        <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-brand-300">
-          {greeting(nowISO)}
-        </p>
-        <h1 className="mt-2 font-display text-4xl font-bold uppercase leading-none tracking-tight text-white sm:text-5xl xl:text-6xl">
-          {firstName}
-        </h1>
-        <p className="mt-2 text-sm text-slate-300">
-          {fmtFullDate(nowISO)} · Coached by {coachName}
-        </p>
+      <div className="relative mb-6 overflow-hidden rounded-xl border border-ink/10 bg-ink text-white shadow-soft">
+        {/* varsity diagonal stripe motif */}
+        <div
+          className="pointer-events-none absolute inset-0 opacity-[0.07]"
+          style={{
+            backgroundImage:
+              "repeating-linear-gradient(115deg, #EAB308 0, #EAB308 2px, transparent 2px, transparent 13px)",
+          }}
+        />
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_86%_-15%,rgb(234_179_8_/_0.30),transparent_46%)]" />
+        <div className="relative p-5 sm:p-7">
+          <p className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.24em] text-brand-300">
+            <span className="h-3 w-1 rounded-full bg-brand-400" />
+            {greeting(nowISO)}
+          </p>
+          <h1 className="mt-3 font-display text-4xl font-bold uppercase leading-[0.9] tracking-tight text-white sm:text-5xl xl:text-6xl">
+            {firstName}
+          </h1>
+          <p className="mt-2.5 text-sm text-slate-300">
+            {fmtFullDate(nowISO)} · Coached by {coachName}
+          </p>
+        </div>
+        {/* gold baseline rule */}
+        <div className="relative h-1 w-full bg-gradient-to-r from-brand-400 via-brand-500 to-transparent" />
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3 xl:gap-8">
