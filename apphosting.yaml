@@ -5,11 +5,14 @@
 # Cloud Run, so login / database / the nonce-CSP middleware all work.
 
 runConfig:
-  minInstances: 0
-  maxInstances: 2
+  # Keep one instance always warm so the team never hits a cold start (the whole
+  # squad tends to open the app around the same time). Headroom to 3 instances
+  # and 1 GiB RAM keeps SSR snappy under ~15-20 concurrent users.
+  minInstances: 1
+  maxInstances: 3
   concurrency: 80
   cpu: 1
-  memoryMiB: 512
+  memoryMiB: 1024
 
 env:
   # Postgres connection string (use your provider's POOLED string).
