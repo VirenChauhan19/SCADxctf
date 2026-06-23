@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { WorkoutFormModal, type WorkoutInitial } from "./workout-form-modal";
 import { WorkoutNotesModal } from "./workout-notes-modal";
+import { Portal } from "./ui/portal";
 import { Modal } from "./ui/modal";
 import { Avatar } from "./ui/avatar";
 import { TypeBadge } from "./ui/badges";
@@ -595,15 +596,18 @@ export function CoachWorkouts({
       )}
 
       {/* Mobile quick-add: a New workout button reachable from anywhere in the
-          list (the hero button scrolls off-screen on a phone). */}
-      <button
-        onClick={() => setCreateOpen(true)}
-        className="fixed right-5 z-30 flex items-center gap-2 rounded-full bg-brand-400 px-5 py-3.5 font-semibold text-ink shadow-[0_12px_30px_-8px_rgb(19_23_31_/_0.55)] transition active:scale-95 lg:hidden"
-        style={{ bottom: "calc(5.25rem + env(safe-area-inset-bottom))" }}
-        aria-label="New workout"
-      >
-        <Plus size={20} /> Workout
-      </button>
+          list. Portalled to <body> so it stays pinned to the viewport (the page
+          wrapper's transform would otherwise anchor it mid-page). */}
+      <Portal>
+        <button
+          onClick={() => setCreateOpen(true)}
+          className="fixed right-5 z-40 flex items-center gap-2 rounded-full bg-brand-400 px-5 py-3.5 font-semibold text-ink shadow-[0_12px_30px_-8px_rgb(19_23_31_/_0.55)] transition active:scale-95 lg:hidden"
+          style={{ bottom: "calc(5.25rem + env(safe-area-inset-bottom))" }}
+          aria-label="New workout"
+        >
+          <Plus size={20} /> Workout
+        </button>
+      </Portal>
     </div>
   );
 }

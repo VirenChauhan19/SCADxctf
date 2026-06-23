@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { Avatar } from "./ui/avatar";
 import { Modal } from "./ui/modal";
+import { Portal } from "./ui/portal";
 import { cn } from "@/lib/utils";
 import { fmtRelative, fmtTime, format, isToday } from "@/lib/date";
 import type { MessageDTO, GroupMessageDTO } from "@/lib/dto";
@@ -751,26 +752,28 @@ export function MessagesView({
         )}
       </div>
 
-      {/* lightbox */}
+      {/* lightbox — portalled to <body> so it covers the viewport on mobile */}
       {lightbox && (
-        <div
-          className="fixed inset-0 z-[60] flex items-center justify-center bg-ink/80 p-4"
-          onClick={() => setLightbox(null)}
-        >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={lightbox}
-            alt=""
-            className="max-h-[90vh] max-w-full rounded-xl object-contain shadow-soft"
-          />
-          <button
+        <Portal>
+          <div
+            className="fixed inset-0 z-[60] flex items-center justify-center bg-ink/80 p-4"
             onClick={() => setLightbox(null)}
-            className="absolute right-4 top-4 rounded-lg bg-white/10 p-2 text-white transition hover:bg-white/20"
-            aria-label="Close"
           >
-            <X size={22} />
-          </button>
-        </div>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={lightbox}
+              alt=""
+              className="max-h-[90vh] max-w-full rounded-xl object-contain shadow-soft"
+            />
+            <button
+              onClick={() => setLightbox(null)}
+              className="absolute right-4 top-4 rounded-lg bg-white/10 p-2 text-white transition hover:bg-white/20"
+              aria-label="Close"
+            >
+              <X size={22} />
+            </button>
+          </div>
+        </Portal>
       )}
 
       <Modal
