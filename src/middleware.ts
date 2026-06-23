@@ -48,7 +48,7 @@ function buildCsp(nonce: string): string {
 // Real session verification happens server-side in getCurrentUser().
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
-  const hasSession = req.cookies.has("coach_session");
+  const hasSession = req.cookies.has("__session");
   const isProtected = PROTECTED_PREFIXES.some(
     (p) => pathname === p || pathname.startsWith(p + "/")
   );

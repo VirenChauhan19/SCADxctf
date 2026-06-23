@@ -4,7 +4,11 @@ import { SignJWT, jwtVerify } from "jose";
 import bcrypt from "bcryptjs";
 import { prisma } from "./prisma";
 
-const COOKIE_NAME = "coach_session";
+// MUST be "__session": when the app is served through Firebase Hosting (the
+// scadxctf.web.app proxy → App Hosting backend), Hosting strips every cookie
+// except one named exactly `__session` before forwarding to the server. Any
+// other name means the session never reaches the backend and auth silently fails.
+const COOKIE_NAME = "__session";
 const MAX_AGE = 60 * 60 * 24 * 30; // 30 days
 
 // Known weak/placeholder values that must never be used to sign real sessions.
