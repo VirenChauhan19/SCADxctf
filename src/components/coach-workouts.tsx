@@ -258,22 +258,20 @@ export function CoachWorkouts({
                 </span>
               )}
 
-              <div className="flex shrink-0 items-center justify-end gap-1 lg:mt-4">
+              <div className="flex shrink-0 items-center justify-end gap-2 lg:mt-4">
                 <button
                   onClick={() => setEditing(w)}
-                  className="rounded-lg p-2 text-slate-400 transition hover:bg-paper-100 hover:text-slate-700"
-                  title="Edit"
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-paper-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 transition hover:border-ink/20 hover:text-ink"
                   aria-label={`Edit ${w.title}`}
                 >
-                  <Pencil size={16} />
+                  <Pencil size={15} /> Edit
                 </button>
                 <button
                   onClick={() => setDeleting(w)}
-                  className="rounded-lg p-2 text-slate-400 transition hover:bg-rose-50 hover:text-rose-600"
-                  title="Delete"
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-paper-200 bg-white px-3 py-2 text-xs font-semibold text-slate-500 transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600"
                   aria-label={`Delete ${w.title}`}
                 >
-                  <Trash2 size={16} />
+                  <Trash2 size={15} /> Delete
                 </button>
               </div>
             </div>
@@ -562,6 +560,17 @@ export function CoachWorkouts({
           for it. This can&apos;t be undone.
         </p>
       </Modal>
+
+      {/* Mobile quick-add: a New workout button reachable from anywhere in the
+          list (the hero button scrolls off-screen on a phone). */}
+      <button
+        onClick={() => setCreateOpen(true)}
+        className="fixed right-5 z-30 flex items-center gap-2 rounded-full bg-brand-400 px-5 py-3.5 font-semibold text-ink shadow-[0_12px_30px_-8px_rgb(19_23_31_/_0.55)] transition active:scale-95 lg:hidden"
+        style={{ bottom: "calc(5.25rem + env(safe-area-inset-bottom))" }}
+        aria-label="New workout"
+      >
+        <Plus size={20} /> Workout
+      </button>
     </div>
   );
 }

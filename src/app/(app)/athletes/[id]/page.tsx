@@ -194,6 +194,15 @@ export default async function AthleteDetailPage({
         ))}
       </div>
 
+      {/* coach edits the private per-athlete note for each upcoming workout —
+          kept high on the page so it's the first thing the coach reaches */}
+      <div className="mt-5">
+        <AthleteNoteEditor
+          athleteFirstName={athlete.name.split(" ")[0]}
+          items={noteItems}
+        />
+      </div>
+
       {/* training calendar */}
       <section className="mt-5">
         <h2 className="mb-3 flex items-center gap-2 font-display text-sm font-semibold uppercase tracking-[0.12em] text-ink">
@@ -202,14 +211,6 @@ export default async function AthleteDetailPage({
         </h2>
         <CalendarView events={athleteEvents} isCoach={false} nowISO={nowISO} />
       </section>
-
-      {/* coach edits the private per-athlete note for each upcoming workout */}
-      <div className="mt-5">
-        <AthleteNoteEditor
-          athleteFirstName={athlete.name.split(" ")[0]}
-          items={noteItems}
-        />
-      </div>
 
       <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-3">
         {/* feedback history */}
