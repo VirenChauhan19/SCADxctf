@@ -1,0 +1,34 @@
+# Free "keep-warm" pinger — prevents cold starts during the team's usage window
+# without any always-on cost. It runs only in the afternoon/evening (Atlanta time)
+# so the database (Neon free tier) stays within its free monthly compute budget;
+# outside the window the app scales to zero as normal.
+#
+# Times below are UTC. Atlanta is UTC-4 in summer (EDT) / UTC-5 in winter (EST),
+# so 20:00–01:59 UTC ≈ 4 PM–10 PM ET. Adjust the hours to match practice.
+name: keep-warm
+
+on:
+  schedule:
+    - cron: "*/5 20-23,0-1 * * *" # every 5 min, ~4 PM–10 PM ET
+  workflow_dispatch: {} # lets you run it manually from the Actions tab
+
+# Don't pile up runs if one is slow.
+concurrency:
+  group: keep-warm
+  cancel-in-progress: true
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Warm the server and the database
+        run: |
+          BASE="https://scadxctf.web.app"
+          # Warm the Cloud Run instance (renders a page).
+          curl -s -o /dev/null -w "page: %{http_code} in %{time_total}s\n" "$BASE/login"
+          # A throwaway login hits the DB (user lookup), keeping Neon awake.
+          # It returns 401 — that's expected; we only want the query to run.
+          curl -s -o /dev/null -w "db:   %{http_code} in %{time_total}s\n" \
+            -X POST "$BASE/api/auth/login" \
+            -H "Content-Type: application/json" \
+            -d '{"email":"keep-warm@ping.invalid","password":"x"}'
