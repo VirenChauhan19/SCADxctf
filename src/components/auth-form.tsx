@@ -207,7 +207,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
               <div className="grid grid-cols-2 gap-2">
                 <button
                   type="button"
-                  onClick={() => demoLogin("coach@scadxc.com")}
+                  onClick={() => demoLogin("cbenassi@scadxc.com")}
                   disabled={loading}
                   className="btn-outline"
                 >
