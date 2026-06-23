@@ -63,7 +63,10 @@ const config: Config = {
       },
       boxShadow: {
         card: "0 1px 2px 0 rgb(16 24 40 / 0.04), 0 1px 3px 0 rgb(16 24 40 / 0.06)",
-        soft: "0 4px 16px -4px rgb(16 24 40 / 0.10)",
+        // Layered ambient + contact shadow for a more premium, crafted card.
+        soft: "0 1px 2px 0 rgb(16 24 40 / 0.05), 0 8px 24px -8px rgb(16 24 40 / 0.12)",
+        // Stronger elevation for hover / lifted states.
+        lift: "0 2px 4px -1px rgb(16 24 40 / 0.06), 0 18px 40px -14px rgb(16 24 40 / 0.20)",
       },
       borderRadius: {
         xl: "0.875rem",

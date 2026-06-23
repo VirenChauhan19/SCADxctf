@@ -59,14 +59,14 @@
     @apply rounded-xl border border-ink/[0.08] bg-white shadow-soft transition-all duration-200 ease-out;
   }
   .card-link {
-    @apply hover:-translate-y-0.5 hover:border-brand-300/70 hover:shadow-card;
+    @apply hover:-translate-y-0.5 hover:border-brand-300/70 hover:shadow-lift;
   }
   .eyebrow {
     @apply text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-700;
   }
   .input {
     /* 16px on mobile prevents iOS Safari from auto-zooming on focus; 14px on sm+ */
-    @apply w-full rounded-md border border-ink/15 bg-white/95 px-3 py-2 text-base text-ink shadow-none outline-none transition placeholder:text-slate-400 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 sm:text-sm;
+    @apply w-full rounded-lg border border-ink/15 bg-white px-3 py-2 text-base text-ink shadow-none outline-none transition placeholder:text-slate-400 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/25 sm:text-sm;
   }
   .label {
     @apply mb-1.5 block text-sm font-medium text-slate-700;
@@ -75,10 +75,10 @@
     @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold shadow-sm transition active:translate-y-px focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-paper disabled:cursor-not-allowed disabled:opacity-60 disabled:active:translate-y-0;
   }
   .btn-primary {
-    @apply btn bg-ink text-white hover:bg-ink-700 focus-visible:ring-ink;
+    @apply btn bg-gradient-to-b from-ink-700 to-ink text-white hover:from-ink-600 hover:to-ink-700 focus-visible:ring-ink;
   }
   .btn-gold {
-    @apply btn bg-brand-400 text-ink hover:bg-brand-300 focus-visible:ring-brand-500;
+    @apply btn bg-gradient-to-b from-brand-300 to-brand-400 text-ink shadow-[0_2px_10px_-2px_rgb(234_179_8_/_0.45)] hover:from-brand-200 hover:to-brand-300 focus-visible:ring-brand-500;
   }
   .btn-ghost {
     @apply btn bg-transparent text-slate-700 shadow-none hover:bg-ink/5 focus-visible:ring-slate-300;
