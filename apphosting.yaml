@@ -5,10 +5,12 @@
 # Cloud Run, so login / database / the nonce-CSP middleware all work.
 
 runConfig:
-  # Keep one instance always warm so the team never hits a cold start (the whole
-  # squad tends to open the app around the same time). Headroom to 3 instances
-  # and 1 GiB RAM keeps SSR snappy under ~15-20 concurrent users.
-  minInstances: 1
+  # FREE setup: scale to zero when idle (no always-on cost). The first visitor
+  # after a quiet stretch waits a few seconds for a cold start + DB wake, then
+  # it's fast for everyone. Headroom (3 instances, 1 GiB) only costs while
+  # actually serving and keeps ~15-20 concurrent users smooth once warm.
+  # Set minInstances:1 later if you ever want zero cold starts (small monthly fee).
+  minInstances: 0
   maxInstances: 3
   concurrency: 80
   cpu: 1
