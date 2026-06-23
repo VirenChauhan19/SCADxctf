@@ -1,15 +1,16 @@
 # Free "keep-warm" pinger — prevents cold starts during the team's usage window
-# without any always-on cost. It runs only in the afternoon/evening (Atlanta time)
-# so the database (Neon free tier) stays within its free monthly compute budget;
-# outside the window the app scales to zero as normal.
+# without any always-on cost. It runs only in the morning (Atlanta time) so the
+# database (Neon free tier) stays within its free monthly compute budget; outside
+# the window the app scales to zero as normal.
 #
 # Times below are UTC. Atlanta is UTC-4 in summer (EDT) / UTC-5 in winter (EST),
-# so 20:00–01:59 UTC ≈ 4 PM–10 PM ET. Adjust the hours to match practice.
+# so 09:00–14:59 UTC ≈ 5 AM–11 AM ET (about an hour earlier in winter). Adjust
+# the hours to match practice.
 name: keep-warm
 
 on:
   schedule:
-    - cron: "*/5 20-23,0-1 * * *" # every 5 min, ~4 PM–10 PM ET
+    - cron: "*/5 9-14 * * *" # every 5 min, ~5 AM–11 AM ET (morning practice)
   workflow_dispatch: {} # lets you run it manually from the Actions tab
 
 # Don't pile up runs if one is slow.
