@@ -20,7 +20,7 @@ export default async function WorkoutsPage() {
       include: {
         assignments: {
           where: { athlete: { active: true } },
-          select: { athleteId: true, status: true },
+          select: { id: true, athleteId: true, status: true, customNote: true },
         },
       },
       orderBy: { date: "asc" },
@@ -46,6 +46,11 @@ export default async function WorkoutsPage() {
       location: w.location,
       link: w.link,
       athleteIds: w.assignments.map((a) => a.athleteId),
+      assignmentNotes: w.assignments.map((a) => ({
+        id: a.id,
+        athleteId: a.athleteId,
+        note: a.customNote,
+      })),
       total: w.assignments.length,
       completed: w.assignments.filter((a) => a.status === "COMPLETED").length,
     }));

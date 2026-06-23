@@ -9,6 +9,7 @@ import {
   Loader2,
   Pencil,
   Plus,
+  StickyNote,
   Target,
   Trash2,
   User,
@@ -16,6 +17,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { WorkoutFormModal, type WorkoutInitial } from "./workout-form-modal";
+import { WorkoutNotesModal } from "./workout-notes-modal";
 import { Modal } from "./ui/modal";
 import { Avatar } from "./ui/avatar";
 import { TypeBadge } from "./ui/badges";
@@ -28,6 +30,7 @@ import { format, smartDayLabel } from "@/lib/date";
 export type CoachWorkoutRow = WorkoutInitial & {
   total: number;
   completed: number;
+  assignmentNotes: { id: string; athleteId: string; note: string | null }[];
 };
 
 function MetricTile({
@@ -101,6 +104,7 @@ export function CoachWorkouts({
   const [createOpen, setCreateOpen] = useState(false);
   const [editing, setEditing] = useState<CoachWorkoutRow | null>(null);
   const [deleting, setDeleting] = useState<CoachWorkoutRow | null>(null);
+  const [notesFor, setNotesFor] = useState<CoachWorkoutRow | null>(null);
   const [busy, setBusy] = useState(false);
 
   const nameById = useMemo(
@@ -151,6 +155,7 @@ export function CoachWorkouts({
     const pct = w.total ? Math.round((w.completed / w.total) * 100) : 0;
     const isRest = w.type === "REST";
     const meta = workoutMeta(w.type);
+    const notesCount = w.assignmentNotes.filter((n) => n.note).length;
     const summary = [w.distance, w.pace, w.location].filter(
       (item): item is string => Boolean(item)
     );
@@ -258,7 +263,21 @@ export function CoachWorkouts({
                 </span>
               )}
 
-              <div className="flex shrink-0 items-center justify-end gap-2 lg:mt-4">
+              <div className="flex shrink-0 flex-wrap items-center justify-end gap-2 lg:mt-4">
+                {w.assignmentNotes.length > 0 && (
+                  <button
+                    onClick={() => setNotesFor(w)}
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-brand-200 bg-brand-50 px-3 py-2 text-xs font-semibold text-brand-700 transition hover:border-brand-300 hover:bg-brand-100"
+                    aria-label={`Personal notes for ${w.title}`}
+                  >
+                    <StickyNote size={15} /> Notes
+                    {notesCount > 0 && (
+                      <span className="ml-0.5 rounded bg-brand-500 px-1.5 text-[10px] font-bold text-white">
+                        {notesCount}
+                      </span>
+                    )}
+                  </button>
+                )}
                 <button
                   onClick={() => setEditing(w)}
                   className="inline-flex items-center gap-1.5 rounded-lg border border-paper-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 transition hover:border-ink/20 hover:text-ink"
@@ -560,6 +579,20 @@ export function CoachWorkouts({
           for it. This can&apos;t be undone.
         </p>
       </Modal>
+
+      {notesFor && (
+        <WorkoutNotesModal
+          open
+          onClose={() => setNotesFor(null)}
+          workoutTitle={notesFor.title}
+          rows={notesFor.assignmentNotes.map((n) => ({
+            id: n.id,
+            athleteId: n.athleteId,
+            name: nameById.get(n.athleteId) ?? "Athlete",
+            note: n.note,
+          }))}
+        />
+      )}
 
       {/* Mobile quick-add: a New workout button reachable from anywhere in the
           list (the hero button scrolls off-screen on a phone). */}
