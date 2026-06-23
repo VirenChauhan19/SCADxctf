@@ -136,25 +136,44 @@ export function CoachDashboard({
 
   return (
     <div>
-      <div className="mb-6 flex flex-col gap-3 border-b border-paper-200 pb-4 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <p className="eyebrow">{coachFirstName ? `Coach ${coachFirstName}` : "Coach"}</p>
-          <h1 className="mt-1 font-display text-3xl font-bold uppercase leading-none tracking-tight text-ink sm:text-[2.5rem] xl:text-5xl">
-            {teamName}
-          </h1>
-          <p className="mt-1.5 text-sm text-slate-500">
-            {fmtFullDate(nowISO)}
-            {season ? ` · ${season}` : ""}
-          </p>
+      <div className="relative mb-6 overflow-hidden rounded-xl border border-ink/10 bg-ink text-white shadow-soft">
+        {/* varsity diagonal stripe motif */}
+        <div
+          className="pointer-events-none absolute inset-0 opacity-[0.07]"
+          style={{
+            backgroundImage:
+              "repeating-linear-gradient(115deg, #EAB308 0, #EAB308 2px, transparent 2px, transparent 13px)",
+          }}
+        />
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_86%_-15%,rgb(234_179_8_/_0.30),transparent_46%)]" />
+        <div className="relative flex flex-col gap-5 p-5 sm:flex-row sm:items-end sm:justify-between sm:p-7">
+          <div>
+            <p className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.24em] text-brand-300">
+              <span className="h-3 w-1 rounded-full bg-brand-400" />
+              {coachFirstName ? `Coach ${coachFirstName}` : "Coach workspace"}
+            </p>
+            <h1 className="mt-3 font-display text-4xl font-bold uppercase leading-[0.9] tracking-tight text-white sm:text-5xl xl:text-6xl">
+              {teamName}
+            </h1>
+            <p className="mt-2.5 text-sm text-slate-300">
+              {fmtFullDate(nowISO)}
+              {season ? ` · ${season}` : ""}
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              className="btn border border-white/15 bg-white/10 text-white hover:bg-white/15 focus-visible:ring-white"
+              onClick={() => setAnnounceOpen(true)}
+            >
+              Announce
+            </button>
+            <button className="btn-gold" onClick={() => setWorkoutOpen(true)}>
+              <Plus size={16} /> New workout
+            </button>
+          </div>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <button className="btn-outline" onClick={() => setAnnounceOpen(true)}>
-            Announce
-          </button>
-          <button className="btn-gold" onClick={() => setWorkoutOpen(true)}>
-            <Plus size={16} /> New workout
-          </button>
-        </div>
+        {/* gold baseline rule */}
+        <div className="relative h-1 w-full bg-gradient-to-r from-brand-400 via-brand-500 to-transparent" />
       </div>
 
       {/* scoreboard */}

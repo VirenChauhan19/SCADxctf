@@ -41,7 +41,11 @@ export async function POST(req: NextRequest) {
     }
 
     await setSessionCookie(user.id, user.sessionVersion);
-    return ok({ id: user.id, role: user.role });
+    return ok({
+      id: user.id,
+      role: user.role,
+      mustChangePassword: user.mustChangePassword,
+    });
   } catch (e) {
     return apiError(e);
   }

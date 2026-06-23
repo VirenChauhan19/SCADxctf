@@ -73,12 +73,14 @@ export function AthleteDashboard({
 
   return (
     <div>
-      <div className="mb-6 border-b border-paper-200 pb-4">
-        <p className="eyebrow">{greeting(nowISO)}</p>
-        <h1 className="mt-1 font-display text-3xl font-bold uppercase leading-none tracking-tight text-ink sm:text-[2.5rem] xl:text-5xl">
+      <div className="mb-6 overflow-hidden rounded-lg border border-ink/10 bg-ink p-5 text-white shadow-soft sm:p-6">
+        <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-brand-300">
+          {greeting(nowISO)}
+        </p>
+        <h1 className="mt-2 font-display text-4xl font-bold uppercase leading-none tracking-tight text-white sm:text-5xl xl:text-6xl">
           {firstName}
         </h1>
-        <p className="mt-1.5 text-sm text-slate-500">
+        <p className="mt-2 text-sm text-slate-300">
           {fmtFullDate(nowISO)} · Coached by {coachName}
         </p>
       </div>

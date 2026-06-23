@@ -12,23 +12,28 @@ export default async function AppLayout({
 }) {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
+  // Provisioned accounts with a temporary password must set their own first —
+  // they can't reach any in-app page until they do.
+  if (user.mustChangePassword) redirect("/set-password");
 
-  const unreadDms = await prisma.message.count({
-    where: { type: "DIRECT", recipientId: user.id, readAt: null },
-  });
-
-  let unreadAnnouncements = 0;
-  if (user.role !== "COACH" && user.teamId) {
-    unreadAnnouncements = await prisma.message.count({
-      where: {
-        type: "ANNOUNCEMENT",
-        teamId: user.teamId,
-        ...(user.lastReadAnnouncementsAt
-          ? { createdAt: { gt: user.lastReadAnnouncementsAt } }
-          : {}),
-      },
-    });
-  }
+  // Run both counts concurrently so the shell that wraps every page adds one
+  // round-trip of latency, not two.
+  const [unreadDms, unreadAnnouncements] = await Promise.all([
+    prisma.message.count({
+      where: { type: "DIRECT", recipientId: user.id, readAt: null },
+    }),
+    user.role !== "COACH" && user.teamId
+      ? prisma.message.count({
+          where: {
+            type: "ANNOUNCEMENT",
+            teamId: user.teamId,
+            ...(user.lastReadAnnouncementsAt
+              ? { createdAt: { gt: user.lastReadAnnouncementsAt } }
+              : {}),
+          },
+        })
+      : Promise.resolve(0),
+  ]);
 
   return (
     <AppShell

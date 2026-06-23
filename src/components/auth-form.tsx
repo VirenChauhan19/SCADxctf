@@ -39,7 +39,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
         setLoading(false);
         return;
       }
-      router.push("/dashboard");
+      router.push(data.mustChangePassword ? "/set-password" : "/dashboard");
       router.refresh();
     } catch {
       setError("Network error. Is the server running?");

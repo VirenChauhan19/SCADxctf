@@ -143,6 +143,7 @@ export const getCurrentUser = cache(async () => {
       avatarColor: true,
       lastReadAnnouncementsAt: true,
       sessionVersion: true,
+      mustChangePassword: true,
     },
   });
   if (!user || !user.active) return null;

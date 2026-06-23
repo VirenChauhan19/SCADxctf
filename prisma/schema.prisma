@@ -31,6 +31,7 @@ model User {
   role         String   @default("ATHLETE") // COACH | ATHLETE
   active       Boolean  @default(true)
   sessionVersion Int    @default(0) // bump to revoke all of a user's existing sessions
+  mustChangePassword Boolean @default(false) // force a one-time password reset on next login (temp/provisioned accounts)
 
   // Athlete profile details
   gradYear       Int?

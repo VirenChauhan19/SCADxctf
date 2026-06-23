@@ -1,0 +1,16 @@
+{
+  "hosting": {
+    "site": "scadxctf",
+    "public": "public",
+    "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
+    "rewrites": [
+      {
+        "source": "**",
+        "run": {
+          "serviceId": "coach",
+          "region": "us-east4"
+        }
+      }
+    ]
+  }
+}

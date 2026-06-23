@@ -30,26 +30,49 @@ export default async function DashboardPage() {
 
   // ---------------- ATHLETE ----------------
   if (user.role !== "COACH") {
-    const profile = await prisma.user.findUnique({
-      where: { id: user.id },
-      select: { mileageGroup: true, lrTarget: true, ezTarget: true, paces: true },
-    });
-
-    const weekAssignments = await prisma.assignment.findMany({
-      where: {
-        athleteId: user.id,
-        workout: { date: { gte: ws, lte: we } },
-      },
-      include: { workout: true, feedback: true },
-    });
-
-    const todayAssignments = await prisma.assignment.findMany({
-      where: {
-        athleteId: user.id,
-        workout: { date: { gte: todayStart, lte: todayEnd } },
-      },
-      include: { workout: true, feedback: true },
-    });
+    const [
+      profile,
+      weekAssignments,
+      todayAssignments,
+      latestAnnouncementRow,
+      unreadCount,
+      latestDm,
+    ] = await Promise.all([
+      prisma.user.findUnique({
+        where: { id: user.id },
+        select: { mileageGroup: true, lrTarget: true, ezTarget: true, paces: true },
+      }),
+      prisma.assignment.findMany({
+        where: {
+          athleteId: user.id,
+          workout: { date: { gte: ws, lte: we } },
+        },
+        include: { workout: true, feedback: true },
+      }),
+      prisma.assignment.findMany({
+        where: {
+          athleteId: user.id,
+          workout: { date: { gte: todayStart, lte: todayEnd } },
+        },
+        include: { workout: true, feedback: true },
+      }),
+      user.teamId
+        ? prisma.message.findFirst({
+            where: { type: "ANNOUNCEMENT", teamId: user.teamId },
+            orderBy: { createdAt: "desc" },
+          })
+        : Promise.resolve(null),
+      prisma.message.count({
+        where: { type: "DIRECT", recipientId: user.id, readAt: null },
+      }),
+      prisma.message.findFirst({
+        where: {
+          type: "DIRECT",
+          OR: [{ senderId: user.id }, { recipientId: user.id }],
+        },
+        orderBy: { createdAt: "desc" },
+      }),
+    ]);
 
     const teamFirst = (a: { workout: { scope: string; date: Date } }, b: { workout: { scope: string; date: Date } }) =>
       a.workout.scope === b.workout.scope
@@ -84,25 +107,6 @@ export default async function DashboardPage() {
       completed: nonRest.filter((a) => a.status === "COMPLETED").length,
       total: nonRest.length,
     };
-
-    const latestAnnouncementRow = user.teamId
-      ? await prisma.message.findFirst({
-          where: { type: "ANNOUNCEMENT", teamId: user.teamId },
-          orderBy: { createdAt: "desc" },
-        })
-      : null;
-
-    const unreadCount = await prisma.message.count({
-      where: { type: "DIRECT", recipientId: user.id, readAt: null },
-    });
-
-    const latestDm = await prisma.message.findFirst({
-      where: {
-        type: "DIRECT",
-        OR: [{ senderId: user.id }, { recipientId: user.id }],
-      },
-      orderBy: { createdAt: "desc" },
-    });
 
     return (
       <AthleteDashboard
@@ -142,49 +146,79 @@ export default async function DashboardPage() {
   // ---------------- COACH ----------------
   const teamId = user.teamId!;
 
-  const athleteRows = await prisma.user.findMany({
-    where: { teamId, role: "ATHLETE", active: true },
-    select: { id: true, name: true, mileageGroup: true },
-    orderBy: { name: "asc" },
-  });
+  // Fetch everything the dashboard needs in parallel. These queries are
+  // independent, so running them concurrently turns ~7 sequential round-trips
+  // to the database into one — that latency was the bulk of the post-login wait.
+  const [
+    athleteRows,
+    weekAssignments,
+    needsDiscussion,
+    unreadMessages,
+    todayWorkouts,
+    feedbackRows,
+    upcomingRows,
+  ] = await Promise.all([
+    prisma.user.findMany({
+      where: { teamId, role: "ATHLETE", active: true },
+      select: { id: true, name: true, mileageGroup: true },
+      orderBy: { name: "asc" },
+    }),
+    // Week completion (non-rest team assignments) — only count athletes still on
+    // the active roster so removed athletes don't drag the numbers.
+    prisma.assignment.findMany({
+      where: {
+        athlete: { active: true },
+        workout: { teamId, date: { gte: ws, lte: we }, type: { not: "REST" } },
+      },
+      select: { status: true },
+    }),
+    prisma.assignment.count({
+      where: {
+        status: "NEEDS_DISCUSSION",
+        athlete: { active: true },
+        workout: { teamId, date: { gte: addDays(todayStart, -10) } },
+      },
+    }),
+    prisma.message.count({
+      where: { type: "DIRECT", recipientId: user.id, readAt: null },
+    }),
+    // Today's workouts with completion counts
+    prisma.workout.findMany({
+      where: { teamId, date: { gte: todayStart, lte: todayEnd } },
+      include: {
+        assignments: {
+          where: { athlete: { active: true } },
+          select: { status: true, athleteId: true },
+        },
+      },
+      orderBy: [{ scope: "asc" }, { date: "asc" }],
+    }),
+    prisma.feedback.findMany({
+      where: { athlete: { active: true }, workout: { teamId } },
+      orderBy: { updatedAt: "desc" },
+      take: 6,
+      include: {
+        athlete: { select: { id: true, name: true } },
+        workout: { select: { title: true, type: true } },
+      },
+    }),
+    prisma.workout.findMany({
+      where: { teamId, date: { gte: todayStart } },
+      orderBy: { date: "asc" },
+      take: 6,
+      include: {
+        assignments: {
+          where: { athlete: { active: true } },
+          select: { id: true },
+        },
+      },
+    }),
+  ]);
 
-  // Week completion (non-rest team assignments) — only count athletes still on
-  // the active roster so removed athletes don't drag the numbers.
-  const weekAssignments = await prisma.assignment.findMany({
-    where: {
-      athlete: { active: true },
-      workout: { teamId, date: { gte: ws, lte: we }, type: { not: "REST" } },
-    },
-    select: { status: true },
-  });
   const weekCompleted = weekAssignments.filter((a) => a.status === "COMPLETED").length;
   const weekCompletionPct = weekAssignments.length
     ? Math.round((weekCompleted / weekAssignments.length) * 100)
     : 0;
-
-  const needsDiscussion = await prisma.assignment.count({
-    where: {
-      status: "NEEDS_DISCUSSION",
-      athlete: { active: true },
-      workout: { teamId, date: { gte: addDays(todayStart, -10) } },
-    },
-  });
-
-  const unreadMessages = await prisma.message.count({
-    where: { type: "DIRECT", recipientId: user.id, readAt: null },
-  });
-
-  // Today's workouts with completion counts
-  const todayWorkouts = await prisma.workout.findMany({
-    where: { teamId, date: { gte: todayStart, lte: todayEnd } },
-    include: {
-      assignments: {
-        where: { athlete: { active: true } },
-        select: { status: true, athleteId: true },
-      },
-    },
-    orderBy: [{ scope: "asc" }, { date: "asc" }],
-  });
 
   const today = todayWorkouts.map((w) => {
     const total = w.assignments.length;
@@ -215,15 +249,6 @@ export default async function DashboardPage() {
     status: statusByAthlete.get(a.id) ?? "ASSIGNED",
   }));
 
-  const feedbackRows = await prisma.feedback.findMany({
-    where: { athlete: { active: true }, workout: { teamId } },
-    orderBy: { updatedAt: "desc" },
-    take: 6,
-    include: {
-      athlete: { select: { id: true, name: true } },
-      workout: { select: { title: true, type: true } },
-    },
-  });
   const recentFeedback = feedbackRows.map((f) => ({
     athleteId: f.athlete.id,
     athleteName: f.athlete.name,
@@ -236,17 +261,6 @@ export default async function DashboardPage() {
     whenISO: f.updatedAt.toISOString(),
   }));
 
-  const upcomingRows = await prisma.workout.findMany({
-    where: { teamId, date: { gte: todayStart } },
-    orderBy: { date: "asc" },
-    take: 6,
-    include: {
-      assignments: {
-        where: { athlete: { active: true } },
-        select: { id: true },
-      },
-    },
-  });
   const upcoming = upcomingRows.map((w) => ({
     id: w.id,
     title: w.title,

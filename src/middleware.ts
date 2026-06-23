@@ -7,6 +7,7 @@ const PROTECTED_PREFIXES = [
   "/athletes",
   "/workouts",
   "/settings",
+  "/set-password",
 ];
 
 const isDev = process.env.NODE_ENV !== "production";

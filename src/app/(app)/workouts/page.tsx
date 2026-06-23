@@ -3,7 +3,6 @@ import { endOfDay } from "date-fns";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { toAssignmentDTO } from "@/lib/dto";
-import { PageHeader } from "@/components/ui/page-header";
 import { CoachWorkouts, type CoachWorkoutRow } from "@/components/coach-workouts";
 import { AthleteWorkouts } from "@/components/athlete-workouts";
 
@@ -51,15 +50,7 @@ export default async function WorkoutsPage() {
       completed: w.assignments.filter((a) => a.status === "COMPLETED").length,
     }));
 
-    return (
-      <div>
-        <PageHeader
-          title="Workouts"
-          subtitle="Build sessions, assign them, and track completion."
-        />
-        <CoachWorkouts workouts={rows} athletes={athletes} nowISO={nowISO} />
-      </div>
-    );
+    return <CoachWorkouts workouts={rows} athletes={athletes} nowISO={nowISO} />;
   }
 
   // Athlete
@@ -75,13 +66,5 @@ export default async function WorkoutsPage() {
     .filter((a) => a.status === "ASSIGNED" && a.workout.date <= todayEnd)
     .map((a) => a.id);
 
-  return (
-    <div>
-      <PageHeader
-        title="My Workouts"
-        subtitle="Your full training schedule. Tap a session to log how it went."
-      />
-      <AthleteWorkouts assignments={assignments} viewIds={viewIds} nowISO={nowISO} />
-    </div>
-  );
+  return <AthleteWorkouts assignments={assignments} viewIds={viewIds} nowISO={nowISO} />;
 }

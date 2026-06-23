@@ -29,3 +29,7 @@ yarn-debug.log*
 yarn-error.log*
 .vercel
 *.tsbuildinfo
+
+# firebase (deploy cache + debug logs; not source)
+/.firebase/
+firebase-debug.log*

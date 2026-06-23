@@ -35,6 +35,7 @@ export async function POST(req: NextRequest) {
         email,
         passwordHash,
         role: "ATHLETE",
+        mustChangePassword: true, // they set their own password on first login
         teamId: coach.teamId,
         gradYear: gradYear && !Number.isNaN(gradYear) ? gradYear : null,
         events: clean(b.events),
@@ -46,7 +47,7 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    return ok({ id: athlete.id, defaultPassword: b.password ? undefined : password }, 201);
+    return ok({ id: athlete.id, tempPassword: password }, 201);
   } catch (e) {
     return apiError(e);
   }

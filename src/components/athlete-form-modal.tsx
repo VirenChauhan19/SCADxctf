@@ -94,7 +94,7 @@ export function AthleteFormModal({
       description={
         editing
           ? undefined
-          : "They'll get a starter password of “password123” to change later."
+          : "They'll sign in with the temporary password “password123”, then set their own on first login."
       }
       size="lg"
       footer={
