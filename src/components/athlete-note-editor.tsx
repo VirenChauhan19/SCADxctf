@@ -19,11 +19,14 @@ type NoteItem = {
 // roster — pick an athlete, jump to the session, type the note.
 export function AthleteNoteEditor({
   athleteFirstName,
-  items,
+  upcoming,
+  recent,
 }: {
   athleteFirstName: string;
-  items: NoteItem[];
+  upcoming: NoteItem[];
+  recent: NoteItem[];
 }) {
+  const total = upcoming.length + recent.length;
   return (
     <section className="card p-5">
       <div className="flex items-center gap-2">
@@ -34,21 +37,47 @@ export function AthleteNoteEditor({
       </div>
       <p className="mt-1.5 text-sm text-slate-500">
         Private notes only {athleteFirstName} sees on a session — coaching cues,
-        pace tweaks, or a check-in. Tap a workout to add or edit one.
+        pace tweaks, or a check-in. Tap any workout to add or edit one.
       </p>
 
-      {items.length === 0 ? (
+      {total === 0 ? (
         <p className="mt-4 rounded-lg border border-dashed border-paper-200 bg-paper-50 px-4 py-6 text-center text-sm text-slate-400">
-          No upcoming sessions for {athleteFirstName} to annotate yet.
+          No sessions for {athleteFirstName} to annotate yet.
         </p>
       ) : (
-        <ul className="mt-3 divide-y divide-paper-100">
-          {items.map((it) => (
-            <NoteRow key={it.id} item={it} athleteFirstName={athleteFirstName} />
-          ))}
-        </ul>
+        <div className="mt-3 space-y-5">
+          {upcoming.length > 0 && (
+            <NoteGroup label="Upcoming" items={upcoming} athleteFirstName={athleteFirstName} />
+          )}
+          {recent.length > 0 && (
+            <NoteGroup label="Recent" items={recent} athleteFirstName={athleteFirstName} />
+          )}
+        </div>
       )}
     </section>
+  );
+}
+
+function NoteGroup({
+  label,
+  items,
+  athleteFirstName,
+}: {
+  label: string;
+  items: NoteItem[];
+  athleteFirstName: string;
+}) {
+  return (
+    <div>
+      <p className="mb-1 px-0.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+        {label}
+      </p>
+      <ul className="divide-y divide-paper-100">
+        {items.map((it) => (
+          <NoteRow key={it.id} item={it} athleteFirstName={athleteFirstName} />
+        ))}
+      </ul>
+    </div>
   );
 }
 
