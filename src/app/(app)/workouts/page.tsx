@@ -1,8 +1,9 @@
 import { redirect } from "next/navigation";
-import { endOfDay } from "date-fns";
+import { endOfDay, startOfDay, subDays } from "date-fns";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { toAssignmentDTO } from "@/lib/dto";
+import { WORKOUTS_PAST_DAYS } from "@/lib/query-limits";
 import { CoachWorkouts, type CoachWorkoutRow } from "@/components/coach-workouts";
 import { AthleteWorkouts } from "@/components/athlete-workouts";
 
@@ -12,24 +13,34 @@ export default async function WorkoutsPage() {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
 
-  const nowISO = new Date().toISOString();
+  const now = new Date();
+  const nowISO = now.toISOString();
+
+  // This screen shows every upcoming session plus an "Earlier" section. Earlier
+  // reaches back WORKOUTS_PAST_DAYS rather than to the beginning of time, so the
+  // list can't grow without bound as seasons pile up. Nothing in the current
+  // history is older than this cutoff.
+  const historyFrom = subDays(startOfDay(now), WORKOUTS_PAST_DAYS);
 
   if (user.role === "COACH") {
-    const workouts = await prisma.workout.findMany({
-      where: { teamId: user.teamId ?? undefined },
-      include: {
-        assignments: {
-          where: { athlete: { active: true } },
-          select: { id: true, athleteId: true, status: true, customNote: true },
+    // Two independent queries, issued together instead of one after the other.
+    const [workouts, athletes] = await Promise.all([
+      prisma.workout.findMany({
+        where: { teamId: user.teamId ?? undefined, date: { gte: historyFrom } },
+        include: {
+          assignments: {
+            where: { athlete: { active: true } },
+            select: { id: true, athleteId: true, status: true, customNote: true },
+          },
         },
-      },
-      orderBy: { date: "asc" },
-    });
-    const athletes = await prisma.user.findMany({
-      where: { teamId: user.teamId ?? undefined, role: "ATHLETE", active: true },
-      select: { id: true, name: true, mileageGroup: true },
-      orderBy: { name: "asc" },
-    });
+        orderBy: { date: "asc" },
+      }),
+      prisma.user.findMany({
+        where: { teamId: user.teamId ?? undefined, role: "ATHLETE", active: true },
+        select: { id: true, name: true, mileageGroup: true },
+        orderBy: { name: "asc" },
+      }),
+    ]);
 
     const rows: CoachWorkoutRow[] = workouts.map((w) => ({
       id: w.id,
@@ -60,13 +71,13 @@ export default async function WorkoutsPage() {
 
   // Athlete
   const assignmentRows = await prisma.assignment.findMany({
-    where: { athleteId: user.id },
+    where: { athleteId: user.id, workout: { date: { gte: historyFrom } } },
     include: { workout: true, feedback: true },
     orderBy: { workout: { date: "asc" } },
   });
   const assignments = assignmentRows.map(toAssignmentDTO);
 
-  const todayEnd = endOfDay(new Date());
+  const todayEnd = endOfDay(now);
   const viewIds = assignmentRows
     .filter((a) => a.status === "ASSIGNED" && a.workout.date <= todayEnd)
     .map((a) => a.id);

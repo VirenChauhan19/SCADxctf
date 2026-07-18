@@ -103,7 +103,7 @@ const config: Config = {
         },
         // route-change entrance for the main content area
         "page-enter": {
-          from: { opacity: "0", transform: "translateY(10px)" },
+          from: { opacity: "0", transform: "translateY(6px)" },
           to: { opacity: "1", transform: "translateY(0)" },
         },
       },
@@ -119,7 +119,10 @@ const config: Config = {
         "sheet-down": "sheet-down 0.24s cubic-bezier(0.4, 0, 1, 1) both",
         "fade-out": "fade-out 0.22s ease-in both",
         float: "float 4s ease-in-out infinite",
-        "page-enter": "page-enter 0.5s cubic-bezier(0.22, 1, 0.36, 1) both",
+        // Runs on every tab change, and `both` means the page starts invisible
+        // and only finishes appearing when it ends. At half a second that read
+        // as lag on its own, regardless of how fast the data arrived.
+        "page-enter": "page-enter 0.26s cubic-bezier(0.22, 1, 0.36, 1) both",
       },
     },
   },

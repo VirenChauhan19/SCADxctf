@@ -152,6 +152,36 @@
   .stagger > *:nth-child(n + 8) {
     animation-delay: 225ms;
   }
+
+  /* Timeline lists that run long — a full season is several hundred cards.
+     `.stagger` is wrong at that length: it hands an entrance animation to every
+     single child, so the workouts screen started hundreds of them at once on a
+     phone. This keeps the entrance for the cards you can actually see, and lets
+     the browser skip layout and paint for everything scrolled out of view.
+     `contain-intrinsic-size: auto` means each card remembers its real height
+     once measured, so the scrollbar stays honest and scrolling doesn't jump. */
+  .list-long > * {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 132px;
+  }
+  .list-long > *:nth-child(-n + 6) {
+    animation: fade-up 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+  .list-long > *:nth-child(2) {
+    animation-delay: 45ms;
+  }
+  .list-long > *:nth-child(3) {
+    animation-delay: 85ms;
+  }
+  .list-long > *:nth-child(4) {
+    animation-delay: 120ms;
+  }
+  .list-long > *:nth-child(5) {
+    animation-delay: 150ms;
+  }
+  .list-long > *:nth-child(6) {
+    animation-delay: 180ms;
+  }
 }
 
 /* Explicit keyframes so the .stagger entrance works regardless of Tailwind purge. */

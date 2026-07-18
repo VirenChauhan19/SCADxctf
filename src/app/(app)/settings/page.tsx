@@ -10,12 +10,36 @@ export default async function SettingsPage() {
   const sessionUser = await getCurrentUser();
   if (!sessionUser) redirect("/login");
 
-  const user = await prisma.user.findUnique({ where: { id: sessionUser.id } });
+  // getCurrentUser already resolved the session's teamId, so the profile and the
+  // team can be fetched side by side instead of the team waiting on the profile.
+  const [user, team] = await Promise.all([
+    prisma.user.findUnique({
+      where: { id: sessionUser.id },
+      // Only the fields the form binds to. A bare findUnique also returns
+      // passwordHash, which has no reason to be in this render.
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        phone: true,
+        hometown: true,
+        gradYear: true,
+        events: true,
+        emergencyName: true,
+        emergencyPhone: true,
+        bio: true,
+        mileageGroup: true,
+      },
+    }),
+    sessionUser.teamId
+      ? prisma.team.findUnique({
+          where: { id: sessionUser.teamId },
+          select: { name: true, season: true },
+        })
+      : Promise.resolve(null),
+  ]);
   if (!user) redirect("/login");
-
-  const team = user.teamId
-    ? await prisma.team.findUnique({ where: { id: user.teamId } })
-    : null;
 
   return (
     <div>

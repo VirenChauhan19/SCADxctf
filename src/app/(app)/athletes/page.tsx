@@ -18,45 +18,66 @@ export default async function AthletesPage() {
   const ws = weekStart(now);
   const we = weekEnd(now);
 
-  const athletes = await prisma.user.findMany({
-    where: { teamId, role: "ATHLETE", active: true },
-    orderBy: { name: "asc" },
-  });
-
-  const weekAssignments = await prisma.assignment.findMany({
-    where: {
-      workout: { teamId, date: { gte: ws, lte: we }, type: { not: "REST" } },
-    },
-    select: { athleteId: true, status: true },
-  });
-
-  const needsRows = await prisma.assignment.findMany({
-    where: {
-      status: "NEEDS_DISCUSSION",
-      workout: { teamId, date: { gte: addDays(startOfDay(now), -10) } },
-    },
-    select: { athleteId: true },
-  });
-
-  const feedbackRows = await prisma.feedback.findMany({
-    where: { workout: { teamId } },
-    orderBy: { updatedAt: "desc" },
-    select: { athleteId: true, updatedAt: true },
-  });
+  // All four queries are independent, so they go out together rather than one
+  // after another. The three aggregates are grouped in the database instead of
+  // pulling every matching row back and counting them here — the roster only
+  // ever displays one number per athlete.
+  const [athletes, weekRows, needsRows, feedbackRows] = await Promise.all([
+    prisma.user.findMany({
+      where: { teamId, role: "ATHLETE", active: true },
+      // Explicit fields: an unfiltered findMany also loads passwordHash, which
+      // this page has no business reading.
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        gradYear: true,
+        events: true,
+        hometown: true,
+        phone: true,
+        emergencyName: true,
+        emergencyPhone: true,
+        bio: true,
+        mileageGroup: true,
+        lrTarget: true,
+      },
+      orderBy: { name: "asc" },
+    }),
+    prisma.assignment.groupBy({
+      by: ["athleteId", "status"],
+      where: {
+        workout: { teamId, date: { gte: ws, lte: we }, type: { not: "REST" } },
+      },
+      _count: { _all: true },
+    }),
+    prisma.assignment.groupBy({
+      by: ["athleteId"],
+      where: {
+        status: "NEEDS_DISCUSSION",
+        workout: { teamId, date: { gte: addDays(startOfDay(now), -10) } },
+      },
+      _count: { _all: true },
+    }),
+    prisma.feedback.groupBy({
+      by: ["athleteId"],
+      where: { workout: { teamId } },
+      _max: { updatedAt: true },
+    }),
+  ]);
 
   const weekStat = new Map<string, { c: number; t: number }>();
-  for (const a of weekAssignments) {
-    const s = weekStat.get(a.athleteId) ?? { c: 0, t: 0 };
-    s.t += 1;
-    if (a.status === "COMPLETED") s.c += 1;
-    weekStat.set(a.athleteId, s);
+  for (const row of weekRows) {
+    const s = weekStat.get(row.athleteId) ?? { c: 0, t: 0 };
+    s.t += row._count._all;
+    if (row.status === "COMPLETED") s.c += row._count._all;
+    weekStat.set(row.athleteId, s);
   }
-  const needsCount = new Map<string, number>();
-  for (const n of needsRows)
-    needsCount.set(n.athleteId, (needsCount.get(n.athleteId) ?? 0) + 1);
-  const lastFeedback = new Map<string, Date>();
-  for (const f of feedbackRows)
-    if (!lastFeedback.has(f.athleteId)) lastFeedback.set(f.athleteId, f.updatedAt);
+  const needsCount = new Map(
+    needsRows.map((n) => [n.athleteId, n._count._all] as const)
+  );
+  const lastFeedback = new Map(
+    feedbackRows.map((f) => [f.athleteId, f._max.updatedAt] as const)
+  );
 
   const roster: RosterAthlete[] = athletes.map((a) => {
     const s = weekStat.get(a.id) ?? { c: 0, t: 0 };

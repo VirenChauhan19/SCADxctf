@@ -5,12 +5,12 @@
 # Cloud Run, so login / database / the nonce-CSP middleware all work.
 
 runConfig:
-  # FREE setup: scale to zero when idle (no always-on cost). The first visitor
-  # after a quiet stretch waits a few seconds for a cold start + DB wake, then
-  # it's fast for everyone. Headroom (3 instances, 1 GiB) only costs while
-  # actually serving and keeps ~15-20 concurrent users smooth once warm.
-  # Set minInstances:1 later if you ever want zero cold starts (small monthly fee).
-  minInstances: 0
+  # One instance stays warm around the clock, so nobody ever waits on a cold
+  # start (container boot + Next.js + Prisma engine init was the 10-20s "the
+  # page won't load" stall on phones). This is the one line here that costs
+  # money: roughly $10-25/month for the always-on instance. Set it back to 0 to
+  # return to the free scale-to-zero behavior and accept cold starts again.
+  minInstances: 1
   maxInstances: 3
   concurrency: 80
   cpu: 1

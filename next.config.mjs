@@ -22,6 +22,12 @@ const nextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
+  // Rewrite barrel-file imports (`import { Send } from "lucide-react"`) to the
+  // individual modules, so a page ships the handful of icons it uses instead of
+  // pulling on the whole set.
+  experimental: {
+    optimizePackageImports: ["lucide-react", "date-fns"],
+  },
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
   },

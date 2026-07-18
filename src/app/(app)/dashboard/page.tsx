@@ -20,17 +20,20 @@ export default async function DashboardPage() {
   const ws = weekStart(now);
   const we = weekEnd(now);
 
-  const team = user.teamId
-    ? await prisma.team.findUnique({
+  // Started here, awaited inside each branch's Promise.all below. Awaiting it up
+  // front would make it a round-trip that everything else queues behind; this
+  // way it flies alongside the rest.
+  const teamPromise = user.teamId
+    ? prisma.team.findUnique({
         where: { id: user.teamId },
-        include: { coach: { select: { name: true } } },
+        select: { name: true, season: true, coach: { select: { name: true } } },
       })
-    : null;
-  const coachName = team?.coach?.name ?? "your coach";
+    : Promise.resolve(null);
 
   // ---------------- ATHLETE ----------------
   if (user.role !== "COACH") {
     const [
+      team,
       profile,
       weekAssignments,
       todayAssignments,
@@ -38,6 +41,7 @@ export default async function DashboardPage() {
       unreadCount,
       latestDm,
     ] = await Promise.all([
+      teamPromise,
       prisma.user.findUnique({
         where: { id: user.id },
         select: { mileageGroup: true, lrTarget: true, ezTarget: true, paces: true },
@@ -111,7 +115,7 @@ export default async function DashboardPage() {
     return (
       <AthleteDashboard
         firstName={user.name.split(" ")[0]}
-        coachName={coachName}
+        coachName={team?.coach?.name ?? "your coach"}
         nowISO={now.toISOString()}
         today={today}
         week={week}
@@ -150,6 +154,7 @@ export default async function DashboardPage() {
   // independent, so running them concurrently turns ~7 sequential round-trips
   // to the database into one — that latency was the bulk of the post-login wait.
   const [
+    team,
     athleteRows,
     weekAssignments,
     needsDiscussion,
@@ -158,6 +163,7 @@ export default async function DashboardPage() {
     feedbackRows,
     upcomingRows,
   ] = await Promise.all([
+    teamPromise,
     prisma.user.findMany({
       where: { teamId, role: "ATHLETE", active: true },
       select: { id: true, name: true, mileageGroup: true },

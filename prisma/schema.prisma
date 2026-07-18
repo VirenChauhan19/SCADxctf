@@ -64,6 +64,9 @@ model User {
   feedback         Feedback[]
   sentMessages     Message[]    @relation("MessageSender")
   receivedMessages Message[]    @relation("MessageRecipient")
+
+  // Every roster lookup filters on exactly these three, in this order.
+  @@index([teamId, role, active])
 }
 
 model Workout {
@@ -89,6 +92,10 @@ model Workout {
 
   assignments Assignment[]
   feedback    Feedback[]
+
+  // Calendar, workouts, and both dashboards all query "this team, this date
+  // range, ordered by date" — this index serves the filter and the sort.
+  @@index([teamId, date])
 }
 
 model Assignment {
@@ -107,6 +114,11 @@ model Assignment {
   feedback Feedback?
 
   @@unique([workoutId, athleteId])
+  // The unique above indexes workoutId as its leading column, so lookups by
+  // workout are already covered. These cover the other two access patterns:
+  // an athlete's own assignments, and the coach's "needs discussion" sweep.
+  @@index([athleteId, status])
+  @@index([status])
 }
 
 model Feedback {
@@ -128,6 +140,9 @@ model Feedback {
   assignment   Assignment? @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
 
   @@unique([workoutId, athleteId])
+  // "Most recent feedback per athlete" powers the roster and the coach
+  // dashboard; both filter by athlete and sort by updatedAt.
+  @@index([athleteId, updatedAt])
 }
 
 model Message {
@@ -146,4 +161,13 @@ model Message {
 
   teamId String?
   team   Team?   @relation(fields: [teamId], references: [id])
+
+  // The unread-DM count runs in the app layout, so it happens on *every* page
+  // view — it gets its own covering index.
+  @@index([type, recipientId, readAt])
+  // Team channels (announcements, group chat, photos) page by newest-first.
+  @@index([type, teamId, createdAt])
+  // A DM thread is "sent by me OR to me"; Postgres bitmap-ORs these two.
+  @@index([type, senderId, createdAt])
+  @@index([type, recipientId, createdAt])
 }

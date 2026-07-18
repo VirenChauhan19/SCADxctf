@@ -1,16 +1,23 @@
-# Free "keep-warm" pinger — prevents cold starts during the team's usage window
-# without any always-on cost. It runs only in the morning (Atlanta time) so the
-# database (Neon free tier) stays within its free monthly compute budget; outside
-# the window the app scales to zero as normal.
+# Keeps the *database* awake during the team's usage window.
 #
-# Times below are UTC. Atlanta is UTC-4 in summer (EDT) / UTC-5 in winter (EST),
-# so 09:00–14:59 UTC ≈ 5 AM–11 AM ET (about an hour earlier in winter). Adjust
-# the hours to match practice.
+# The web server itself no longer needs warming: apphosting.yaml pins
+# minInstances to 1, so a Cloud Run instance is always up. What still sleeps is
+# Neon (the free tier suspends after ~5 idle minutes), and waking it adds a
+# second or two to the first query. This pinger covers the hours the team
+# actually uses the app.
+#
+# Why the window is only ~6 hours: Neon's free plan budgets about 191.9 compute
+# hours a month, which works out to ~6.4 hours a day. Pinging around the clock
+# would blow through that budget and the database would stop accepting queries.
+# Widen these hours only if the plan's budget grows.
+#
+# Times are UTC. Atlanta is UTC-4 in summer (EDT) / UTC-5 in winter (EST), so
+# 09:00-14:59 UTC is about 5 AM-11 AM ET (an hour earlier in winter).
 name: keep-warm
 
 on:
   schedule:
-    - cron: "*/5 9-14 * * *" # every 5 min, ~5 AM–11 AM ET (morning practice)
+    - cron: "*/5 9-14 * * *" # every 5 min, ~5 AM-11 AM ET (morning practice)
   workflow_dispatch: {} # lets you run it manually from the Actions tab
 
 # Don't pile up runs if one is slow.
@@ -22,14 +29,20 @@ jobs:
   ping:
     runs-on: ubuntu-latest
     steps:
-      - name: Warm the server and the database
+      - name: Check the server is up
         run: |
           BASE="https://scadxctf.web.app"
-          # Warm the Cloud Run instance (renders a page).
-          curl -s -o /dev/null -w "page: %{http_code} in %{time_total}s\n" "$BASE/login"
-          # A throwaway login hits the DB (user lookup), keeping Neon awake.
-          # It returns 401 — that's expected; we only want the query to run.
-          curl -s -o /dev/null -w "db:   %{http_code} in %{time_total}s\n" \
+          # /api/health touches no database, so this liveness check is free.
+          curl -fsS -o /dev/null -w "health: %{http_code} in %{time_total}s\n" \
+            --max-time 30 "$BASE/api/health"
+
+      - name: Keep the database awake
+        run: |
+          BASE="https://scadxctf.web.app"
+          # A throwaway login runs one user lookup, which is enough to stop Neon
+          # suspending. It returns 401: expected, we only want the query to run.
+          curl -sS -o /dev/null -w "db:     %{http_code} in %{time_total}s\n" \
+            --max-time 30 \
             -X POST "$BASE/api/auth/login" \
             -H "Content-Type: application/json" \
             -d '{"email":"keep-warm@ping.invalid","password":"x"}'

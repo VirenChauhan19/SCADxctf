@@ -1,9 +1,17 @@
-// Firebase web app — client-side SDK.
+// Firebase web app — client-side SDK, loaded lazily.
 //
 // These values are the public Firebase web config (safe to ship to the browser;
 // access is enforced by Firebase security rules, not by hiding this key). Used
 // here only for Analytics — the app's own auth/data run on the Next.js server.
-import { initializeApp, getApps, getApp, type FirebaseApp } from "firebase/app";
+//
+// `firebase/app` is deliberately NOT imported at the top level. A static import
+// here would pull the SDK into the first-load JavaScript of every single page,
+// because the analytics component runs in the root layout. Behind the dynamic
+// import below it becomes its own chunk that loads after the page is
+// interactive, so a phone on cell data isn't parsing the Firebase SDK before it
+// can show anything. The `import type` is erased at compile time and costs
+// nothing.
+import type { FirebaseApp } from "firebase/app";
 
 const firebaseConfig = {
   apiKey: "AIzaSyC0vTez4WPws-eNZW62UpSu__ubj70zFak",
@@ -15,7 +23,15 @@ const firebaseConfig = {
   measurementId: "G-85LRCHR0R1",
 };
 
-// Reuse the app across hot-reloads / re-imports instead of re-initializing.
-export const firebaseApp: FirebaseApp = getApps().length
-  ? getApp()
-  : initializeApp(firebaseConfig);
+let appPromise: Promise<FirebaseApp> | null = null;
+
+/** Resolves the shared Firebase app, initializing it (and fetching the SDK) once. */
+export function getFirebaseApp(): Promise<FirebaseApp> {
+  if (!appPromise) {
+    appPromise = import("firebase/app").then(
+      ({ initializeApp, getApps, getApp }) =>
+        getApps().length ? getApp() : initializeApp(firebaseConfig)
+    );
+  }
+  return appPromise;
+}

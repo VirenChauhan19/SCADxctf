@@ -21,6 +21,7 @@ import { Avatar } from "./ui/avatar";
 import { TypeBadge } from "./ui/badges";
 import { EmptyState } from "./ui/empty";
 import { AnimatedBar, CountUp } from "./ui/stat";
+import { RevealList } from "./ui/reveal-list";
 import { WORKOUT_TYPE_ORDER, workoutMeta } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import { format, smartDayLabel } from "@/lib/date";
@@ -446,22 +447,22 @@ export function CoachWorkouts({
                   Nothing scheduled ahead.
                 </p>
               ) : (
-                <div className="space-y-4 stagger">
-                  {upcoming.map((w) => (
-                    <Row key={w.id} w={w} />
-                  ))}
-                </div>
+                <RevealList items={upcoming} className="space-y-4 list-long" noun="sessions">
+                  {(w) => <Row key={w.id} w={w} />}
+                </RevealList>
               )}
             </section>
 
             {past.length > 0 && (
               <section>
                 <SectionHeader title="Earlier" count={past.length} muted />
-                <div className="space-y-4 opacity-90 stagger">
-                  {past.map((w) => (
-                    <Row key={w.id} w={w} />
-                  ))}
-                </div>
+                <RevealList
+                  items={past}
+                  className="space-y-4 opacity-90 list-long"
+                  noun="sessions"
+                >
+                  {(w) => <Row key={w.id} w={w} />}
+                </RevealList>
               </section>
             )}
           </div>

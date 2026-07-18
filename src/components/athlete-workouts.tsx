@@ -9,6 +9,7 @@ import { AthleteWorkoutActions } from "./athlete-workout-actions";
 import { TypeBadge, StatusBadge } from "./ui/badges";
 import { EmptyState } from "./ui/empty";
 import { AnimatedBar, CountUp } from "./ui/stat";
+import { RevealList } from "./ui/reveal-list";
 import { WORKOUT_TYPE_ORDER, workoutMeta } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import { format, smartDayLabel } from "@/lib/date";
@@ -325,22 +326,18 @@ export function AthleteWorkouts({
                 Nothing scheduled ahead right now.
               </p>
             ) : (
-              <div className="space-y-4 stagger">
-                {upcoming.map((a) => (
-                  <Card key={a.id} a={a} />
-                ))}
-              </div>
+              <RevealList items={upcoming} className="space-y-4 list-long" noun="sessions">
+                {(a) => <Card key={a.id} a={a} />}
+              </RevealList>
             )}
           </section>
 
           {past.length > 0 && (
             <section>
               <SectionHeader title="Earlier" count={past.length} muted />
-              <div className="space-y-4 stagger">
-                {past.map((a) => (
-                  <Card key={a.id} a={a} />
-                ))}
-              </div>
+              <RevealList items={past} className="space-y-4 list-long" noun="sessions">
+                {(a) => <Card key={a.id} a={a} />}
+              </RevealList>
             </section>
           )}
         </div>

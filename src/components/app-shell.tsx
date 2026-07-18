@@ -221,7 +221,10 @@ export function AppShell({
 
   return (
     <div className="min-h-screen">
-      <div className="pointer-events-none fixed inset-0 bg-[radial-gradient(circle_at_12%_8%,rgb(234_179_8_/_0.18),transparent_26%),radial-gradient(circle_at_88%_0%,rgb(19_23_31_/_0.10),transparent_30%)]" />
+      {/* Decorative wash. Desktop only: on a phone this is a full-viewport
+          fixed layer the compositor carries through every scroll frame, and the
+          body's own paper gradient already covers that size. */}
+      <div className="pointer-events-none fixed inset-0 hidden bg-[radial-gradient(circle_at_12%_8%,rgb(234_179_8_/_0.18),transparent_26%),radial-gradient(circle_at_88%_0%,rgb(19_23_31_/_0.10),transparent_30%)] lg:block" />
 
       <aside className="fixed inset-y-4 left-4 z-30 hidden w-80 flex-col overflow-hidden rounded-lg border border-white/10 bg-ink shadow-[0_24px_70px_-28px_rgb(19_23_31_/_0.70)] lg:flex">
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_0%,rgb(234_179_8_/_0.22),transparent_30%),linear-gradient(180deg,rgb(255_255_255_/_0.07),transparent_42%)]" />
@@ -254,8 +257,12 @@ export function AppShell({
         </div>
       </aside>
 
+      {/* Opaque, not translucent-and-blurred. A backdrop-filter on a sticky bar
+          makes the browser re-blur whatever is passing underneath on every
+          scroll frame, which is the single biggest source of scroll stutter on
+          a phone. This header is lg:hidden, so the blur only ever cost mobile. */}
       <header
-        className="sticky top-0 z-30 border-b border-ink/10 bg-paper/90 px-4 backdrop-blur-xl lg:hidden"
+        className="sticky top-0 z-30 border-b border-ink/10 bg-paper px-4 lg:hidden"
         style={{ paddingTop: "env(safe-area-inset-top)" }}
       >
         <div className="flex h-16 items-center justify-between">
@@ -326,7 +333,9 @@ export function AppShell({
         className="fixed inset-x-0 bottom-0 z-30 px-3 lg:hidden"
         style={{ paddingBottom: "calc(0.7rem + env(safe-area-inset-bottom))" }}
       >
-        <nav className="mx-auto flex max-w-md items-stretch gap-1 rounded-lg border border-ink/10 bg-ink/92 p-1.5 shadow-soft backdrop-blur-xl">
+        {/* Opaque for the same reason as the header above: this bar is pinned
+            over scrolling content, so a backdrop blur re-runs every frame. */}
+        <nav className="mx-auto flex max-w-md items-stretch gap-1 rounded-lg border border-ink/10 bg-ink p-1.5 shadow-soft">
           {bottomNav.map((item) => {
             const Icon = ICONS[item.icon];
             const active = isActive(item.href);
