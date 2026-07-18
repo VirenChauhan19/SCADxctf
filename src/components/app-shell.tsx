@@ -3,21 +3,18 @@
 import { useState } from "react";
 import Link, { useLinkStatus } from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import {
-  CalendarDays,
-  LayoutDashboard,
-  ListChecks,
-  Loader2,
-  LogOut,
-  Menu,
-  MessageSquare,
-  Settings,
-  Users,
-  X,
-} from "lucide-react";
+import { Loader2, LogOut, Menu, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Avatar } from "./ui/avatar";
 import { LogoMark } from "./ui/logo";
+import {
+  IconTrack,
+  IconCalendar,
+  IconStopwatch,
+  IconChat,
+  IconRunner,
+  IconSliders,
+} from "./ui/icons";
 
 type NavUser = {
   id: string;
@@ -27,12 +24,12 @@ type NavUser = {
 };
 
 const ICONS = {
-  dashboard: LayoutDashboard,
-  calendar: CalendarDays,
-  workouts: ListChecks,
-  messages: MessageSquare,
-  athletes: Users,
-  settings: Settings,
+  dashboard: IconTrack,
+  calendar: IconCalendar,
+  workouts: IconStopwatch,
+  messages: IconChat,
+  athletes: IconRunner,
+  settings: IconSliders,
 } as const;
 
 type NavItem = {
@@ -338,7 +335,7 @@ export function AppShell({
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  "relative flex flex-1 flex-col items-center justify-center gap-1 rounded-md py-2 text-[10px] font-semibold transition active:scale-95",
+                  "group relative flex flex-1 flex-col items-center justify-center gap-1 rounded-md py-2 text-[10px] font-semibold transition active:scale-95",
                   active
                     ? "bg-white text-ink"
                     : "text-slate-400 hover:bg-white/10 hover:text-white"

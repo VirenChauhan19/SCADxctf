@@ -175,6 +175,68 @@
   }
 }
 
+/* Branded nav-icon micro-interactions. Each animated part lives inside a `.group`
+   nav link, so it reacts to hover/focus. Pivots are in viewBox units; if a browser
+   ignores transform-box the icon simply stays static (no breakage). The global
+   reduced-motion guard below neutralizes all of this. */
+.ic-hand,
+.ic-lap,
+.ic-today,
+.ic-stride,
+.ic-sliders > *,
+.ic-typing > * {
+  transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+  transform-box: view-box;
+}
+.ic-hand {
+  transform-origin: 12px 13px;
+}
+.ic-stride {
+  transform-origin: 11px 12px;
+}
+.ic-today {
+  transform-origin: 9px 13.75px;
+}
+
+.group:hover .ic-hand,
+.group:focus-visible .ic-hand {
+  transform: rotate(295deg);
+}
+.group:hover .ic-lap,
+.group:focus-visible .ic-lap {
+  transform: translateX(9px);
+}
+.group:hover .ic-today,
+.group:focus-visible .ic-today {
+  transform: translateY(-1px) scale(1.08);
+}
+.group:hover .ic-stride,
+.group:focus-visible .ic-stride {
+  transform: rotate(-15deg);
+}
+.group:hover .ic-sliders > *,
+.group:focus-visible .ic-sliders > * {
+  transform: translateX(2.5px);
+}
+.group:hover .ic-sliders > *:nth-child(2),
+.group:focus-visible .ic-sliders > *:nth-child(2) {
+  transform: translateX(-2.5px);
+}
+.group:hover .ic-typing > *:nth-child(1),
+.group:focus-visible .ic-typing > *:nth-child(1) {
+  transform: translateY(-1.6px);
+}
+.group:hover .ic-typing > *:nth-child(2),
+.group:focus-visible .ic-typing > *:nth-child(2) {
+  transform: translateY(-1.6px);
+  transition-delay: 70ms;
+}
+.group:hover .ic-typing > *:nth-child(3),
+.group:focus-visible .ic-typing > *:nth-child(3) {
+  transform: translateY(-1.6px);
+  transition-delay: 140ms;
+}
+
 /* Respect users who ask for less motion: neutralize animation and transitions. */
 @media (prefers-reduced-motion: reduce) {
   *,

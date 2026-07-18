@@ -72,7 +72,7 @@ function Stat({
   suffix?: string;
 }) {
   return (
-    <div className="card p-4 sm:p-5">
+    <div className="card group p-4 sm:p-5">
       <div className="flex items-center justify-between border-b border-paper-200 pb-2">
         <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500">
           {label}
@@ -82,7 +82,7 @@ function Stat({
       <div className="mt-2.5 font-display text-4xl font-bold leading-none text-ink sm:text-[2.75rem]">
         <CountUp value={value} suffix={suffix} />
       </div>
-      <span className="mt-3 block h-0.5 w-10 bg-brand-500" />
+      <span className="mt-3 block h-0.5 w-10 bg-brand-500 transition-all duration-300 ease-out group-hover:w-16" />
     </div>
   );
 }

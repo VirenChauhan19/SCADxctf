@@ -1,14 +1,8 @@
 "use client";
 
 import { useEffect } from "react";
-import {
-  Activity,
-  CalendarDays,
-  CheckCircle2,
-  Clock3,
-  Target,
-  type LucideIcon,
-} from "lucide-react";
+import { CheckCircle2 } from "lucide-react";
+import { IconStopwatch, IconCalendar, IconChat, IconTrack } from "./ui/icons";
 import type { AssignmentDTO } from "@/lib/dto";
 import { WorkoutDetail } from "./workout-detail";
 import { AthleteWorkoutActions } from "./athlete-workout-actions";
@@ -26,7 +20,7 @@ function MetricTile({
   suffix,
   detail,
 }: {
-  icon: LucideIcon;
+  icon: React.ComponentType<{ size?: number; className?: string }>;
   label: string;
   value: number;
   suffix?: string;
@@ -296,13 +290,13 @@ export function AthleteWorkouts({
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <MetricTile
-          icon={Clock3}
+          icon={IconStopwatch}
           label="Upcoming"
           value={upcoming.length}
           detail="sessions ahead"
         />
         <MetricTile
-          icon={CalendarDays}
+          icon={IconCalendar}
           label="Today"
           value={dueToday}
           detail="due now"
@@ -315,7 +309,7 @@ export function AthleteWorkouts({
           detail={`${completed}/${trackable.length} workouts`}
         />
         <MetricTile
-          icon={Activity}
+          icon={IconChat}
           label="Logged"
           value={feedbackCount}
           detail="feedback notes"
@@ -357,7 +351,7 @@ export function AthleteWorkouts({
               <h2 className="font-display text-sm font-semibold uppercase tracking-[0.14em]">
                 Training progress
               </h2>
-              <Target size={16} className="text-brand-300" />
+              <IconTrack size={16} className="text-brand-300" />
             </div>
             <div className="mt-5 flex items-center gap-4">
               <div

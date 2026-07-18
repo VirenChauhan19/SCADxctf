@@ -1,4 +1,4 @@
-import { Gauge } from "lucide-react";
+import { IconStopwatch } from "./ui/icons";
 import { cn, type Paces } from "@/lib/utils";
 
 export function GroupBadge({ group, className }: { group: string | null; className?: string }) {
@@ -45,7 +45,7 @@ export function PacesCard({
     <section className={cn("card p-5", className)}>
       <div className="mb-3 flex items-center justify-between">
         <div className="flex items-center gap-2 text-sm font-semibold text-ink">
-          <Gauge size={15} className="text-brand-600" /> Pace targets
+          <IconStopwatch size={16} strokeWidth={2} className="text-brand-600" /> Pace targets
         </div>
         <GroupBadge group={group} />
       </div>

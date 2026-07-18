@@ -3,19 +3,16 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
-  CalendarDays,
   CheckCircle2,
-  ClipboardList,
   Loader2,
   Pencil,
   Plus,
   StickyNote,
-  Target,
   Trash2,
   User,
   Users,
-  type LucideIcon,
 } from "lucide-react";
+import { IconStopwatch, IconCalendar, IconRunner } from "./ui/icons";
 import { WorkoutFormModal, type WorkoutInitial } from "./workout-form-modal";
 import { WorkoutNotesModal } from "./workout-notes-modal";
 import { Portal } from "./ui/portal";
@@ -41,7 +38,7 @@ function MetricTile({
   suffix,
   detail,
 }: {
-  icon: LucideIcon;
+  icon: React.ComponentType<{ size?: number; className?: string }>;
   label: string;
   value: number;
   suffix?: string;
@@ -403,13 +400,13 @@ export function CoachWorkouts({
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <MetricTile
-          icon={ClipboardList}
+          icon={IconStopwatch}
           label="Upcoming"
           value={upcoming.length}
           detail="sessions ahead"
         />
         <MetricTile
-          icon={CalendarDays}
+          icon={IconCalendar}
           label="Today"
           value={todayCount}
           detail="on the calendar"
@@ -422,7 +419,7 @@ export function CoachWorkouts({
           detail={`${completedTotal}/${assignedTotal} assignments`}
         />
         <MetricTile
-          icon={Target}
+          icon={IconRunner}
           label="Athletes"
           value={athletes.length}
           detail="active roster"
