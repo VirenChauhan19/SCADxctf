@@ -41,7 +41,12 @@ export function CountUp({
       started.current = true;
       const start = performance.now();
       const tick = (now: number) => {
-        const t = Math.min(1, (now - start) / duration);
+        // Clamp both ends. requestAnimationFrame reports the time the frame
+        // began, which can predate the performance.now() captured a moment ago
+        // in the IntersectionObserver callback. That made `t` negative, and
+        // easeOutCubic turns a negative t into a negative multiplier, so the
+        // stat visibly flashed a negative number before counting up.
+        const t = Math.min(1, Math.max(0, (now - start) / duration));
         const eased = 1 - Math.pow(1 - t, 3); // easeOutCubic
         setDisplay(Math.round(value * eased));
         if (t < 1) requestAnimationFrame(tick);
